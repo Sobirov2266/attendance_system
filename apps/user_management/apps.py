@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class HodimlarConfig(AppConfig):
-    name = 'apps.hodimlar'
+    name = 'apps.user_management'

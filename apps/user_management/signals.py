@@ -1,0 +1,33 @@
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+from .models import UserProfile
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """
+    Yangi User yaratilganda avtomatik UserProfile yaratish
+    """
+    if created:
+        UserProfile.objects.get_or_create(
+            user=instance,
+            defaults={
+                'first_name': instance.first_name or instance.username,
+                'last_name': instance.last_name or '',
+            }
+        )
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """
+    User saqlanayotganda UserProfile ni ham yangilash
+    """
+    try:
+        profile = instance.profile
+        profile.save()
+    except UserProfile.DoesNotExist:
+        UserProfile.objects.create(
+            user=instance,
+            first_name=instance.first_name or instance.username,
+            last_name=instance.last_name or '',
+        )
