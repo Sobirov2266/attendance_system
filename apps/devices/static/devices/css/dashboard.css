@@ -466,6 +466,43 @@ td.name { font-weight: 600; }
     font-weight: 600;
 }
 
+.status-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.status-btn.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-btn.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+
+.delete-btn {
+    border: none;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.delete-btn:hover {
+    background: #fecaca;
+}
+
+
+
+
 .badge-status.active   { background: var(--green-bg); color: var(--green-text); }
 .badge-status.inactive { background: #fee2e2; color: #dc2626; }
 
@@ -476,3 +513,4 @@ td.name { font-weight: 600; }
     border-radius: 50%;
     background: var(--green-text);
 }
+

@@ -176,6 +176,7 @@
                             <th>IP Address</th>
                             <th>Type</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -187,11 +188,22 @@
                                 <span class="badge-type">{{ d.get_device_type_display }}</span>
                             </td>
                             <td>
-                                {% if d.is_active %}
-                                    <span class="badge-status active">Active</span>
-                                {% else %}
-                                    <span class="badge-status inactive">Inactive</span>
-                                {% endif %}
+                                <button
+                                    class="status-btn {% if d.is_active %}active{% else %}inactive{% endif %}"
+                                    onclick="toggleDevice({{ d.id }}, this)"
+                                >
+                                    {% if d.is_active %}
+                                        Active
+                                    {% else %}
+                                        Inactive
+                                    {% endif %}
+                                </button>
+                            </td>
+
+                            <td>
+                                <button class="delete-btn" onclick="deleteDevice({{ d.id }}, this)">
+                                    🗑
+                                </button>
                             </td>
                         </tr>
                         {% empty %}
@@ -222,6 +234,64 @@ function filterTable() {
         const matchSearch = text.includes(search);
         const matchStatus = !status || rowStatus === status;
         row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+    });
+}
+
+
+function toggleDevice(deviceId, btn) {
+    fetch(`/toggle/${deviceId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken()
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+
+            if (data.is_active) {
+                btn.innerText = "Active";
+                btn.classList.remove("inactive");
+                btn.classList.add("active");
+            } else {
+                btn.innerText = "Inactive";
+                btn.classList.remove("active");
+                btn.classList.add("inactive");
+            }
+
+        }
+    });
+}
+
+
+// CSRF token olish
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        .split('=')[1];
+}
+
+
+
+function deleteDevice(deviceId, btn) {
+
+    if (!confirm("Rostdan ham o‘chirmoqchimisiz?")) {
+        return;
+    }
+
+    fetch(`/delete/${deviceId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken()
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // rowni o‘chiramiz
+            const row = btn.closest("tr");
+            row.remove();
+        }
     });
 }
 </script>
