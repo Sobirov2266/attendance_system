@@ -1,0 +1,114 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* BACKGROUND */
+body {
+    min-height: 100vh;
+    background: url("/static/images/ajou.jpg") center / cover no-repeat;
+}
+
+/* PAGE CENTER */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* LOGIN CARD */
+.login-container {
+    background: #ffffff;
+    width: 360px;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* LOGO */
+.logo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo img {
+    width: 80px;
+    margin-bottom: 10px;
+}
+
+.logo h1 {
+    font-size: 22px;
+    color: #004a99;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #666;
+}
+
+/* FORM */
+.login-form {
+    margin-top: 20px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.form-errors,
+.field-errors {
+    color: #b00020;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.field-errors ul {
+    list-style: none;
+}
+
+/* BUTTON */
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: #1e90ff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background: #1877d9;
+}
+
+/* FOOTER */
+.footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.footer a {
+    color: #1e90ff;
+    text-decoration: none;
+}

@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== STAT CARDS ===== -->
+<section class="stats-grid">
+
+    <!-- Qurilmalar -->
+    <div class="stat-card" data-color="blue">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap">
+                <div class="stat-icon">
+                    <i class="bi bi-camera-video-fill"></i>
+                </div>
+                <div class="stat-pulse"></div>
+            </div>
+            <div class="stat-body">
+                <span class="stat-label">Qurilmalar</span>
+                <span class="stat-value" data-target="{{ device_count|default:0 }}">0</span>
+                <span class="stat-sub">
+                    <i class="bi bi-circle-fill text-success"></i>
+                    {{ online_devices|default:0 }} online
+                </span>
+            </div>
+        </div>
+        <a href="{% url 'devices:device_list' %}" class="stat-link">
+            Ko'rish <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    <!-- Foydalanuvchilar -->
+    <div class="stat-card" data-color="green">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap">
+                <div class="stat-icon">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="stat-pulse"></div>
+            </div>
+            <div class="stat-body">
+                <span class="stat-label">Foydalanuvchilar</span>
+                <span class="stat-value" data-target="{{ user_count|default:0 }}">0</span>
+                <span class="stat-sub">
+                    <i class="bi bi-person-plus"></i>
+                    Jami ro'yxatdagi
+                </span>
+            </div>
+        </div>
+        <a href="{% url 'user_management:user_list' %}" class="stat-link">
+            Ko'rish <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    <!-- Guruhlar -->
+    <div class="stat-card" data-color="orange">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap">
+                <div class="stat-icon">
+                    <i class="bi bi-collection-fill"></i>
+                </div>
+                <div class="stat-pulse"></div>
+            </div>
+            <div class="stat-body">
+                <span class="stat-label">Guruhlar</span>
+                <span class="stat-value" data-target="{{ group_count|default:0 }}">0</span>
+                <span class="stat-sub">
+                    <i class="bi bi-diagram-3"></i>
+                    Faol guruhlar
+                </span>
+            </div>
+        </div>
+        <a href="#" class="stat-link">
+            Ko'rish <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    <!-- Xonalar -->
+    <div class="stat-card" data-color="purple">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap">
+                <div class="stat-icon">
+                    <i class="bi bi-door-open-fill"></i>
+                </div>
+                <div class="stat-pulse"></div>
+            </div>
+            <div class="stat-body">
+                <span class="stat-label">Xonalar</span>
+                <span class="stat-value" data-target="{{ room_count|default:0 }}">0</span>
+                <span class="stat-sub">
+                    <i class="bi bi-buildings"></i>
+                    Nazorat ostida
+                </span>
+            </div>
+        </div>
+        <a href="#" class="stat-link">
+            Ko'rish <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+</section>
+
+<!-- ===== SECOND ROW ===== -->
+<section class="dashboard-row">
+
+    <!-- Bugungi davomat -->
+    <div class="dash-card dash-card-wide">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title">
+                <i class="bi bi-calendar2-check"></i>
+                Bugungi davomat
+            </h3>
+            <a href="#" class="dash-card-action">
+                Hammasi <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="dash-card-body">
+            {% if today_attendance %}
+                <div class="attendance-table-wrap">
+                    <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Ism</th>
+                                <th>Qurilma</th>
+                                <th>Vaqt</th>
+                                <th>Holat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in today_attendance %}
+                            <tr>
+                                <td>
+                                    <div class="person-cell">
+                                        <div class="person-avatar">{{ record.user.get_full_name|first|upper }}</div>
+                                        <span>{{ record.user.get_full_name }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ record.device.name }}</td>
+                                <td class="mono">{{ record.timestamp|time:"H:i:s" }}</td>
+                                <td>
+                                    <span class="badge badge-{{ record.status|lower }}">
+                                        {{ record.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-calendar-x"></i>
+                    <p>Bugun hali davomat yo'q</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Qurilmalar holati -->
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title">
+                <i class="bi bi-hdd-network"></i>
+                Qurilmalar holati
+            </h3>
+        </div>
+        <div class="dash-card-body">
+            {% if devices %}
+                <div class="device-list">
+                    {% for device in devices %}
+                    <div class="device-item">
+                        <div class="device-item-left">
+                            <div class="device-status-dot {{ device.is_active|yesno:'online,offline' }}"></div>
+                            <div class="device-item-info">
+                                <span class="device-item-name">{{ device.name }}</span>
+                                <span class="device-item-ip mono">{{ device.ip_address }}</span>
+                            </div>
+                        </div>
+                        <span class="device-item-badge {{ device.is_active|yesno:'badge-online,badge-offline' }}">
+                            {{ device.is_active|yesno:'Online,Offline' }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-camera-video-off"></i>
+                    <p>Qurilmalar topilmadi</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Stat raqamlarni animatsiya bilan ko'rsatish
+function animateCounter(el) {
+    const target = parseInt(el.dataset.target) || 0;
+    if (target === 0) { el.textContent = '0'; return; }
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current.toLocaleString();
+        if (current >= target) clearInterval(timer);
+    }, 30);
+}
+
+document.querySelectorAll('.stat-value[data-target]').forEach(el => {
+    // IntersectionObserver bilan lazy animate
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                animateCounter(el);
+                obs.unobserve(el);
+            }
+        });
+    });
+    obs.observe(el);
+});
+</script>
+{% endblock %}

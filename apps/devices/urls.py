@@ -4,7 +4,7 @@ from . import views
 app_name = 'devices'
 
 urlpatterns = [
-    path('device/', views.device_list, name='device_list'),
-    path('toggle/<int:device_id>/', views.toggle_device, name='toggle_device'),
-    path('delete/<int:device_id>/', views.delete_device, name='delete_device'),
+    path('list/', views.device_list, name='device_list'),                 # /devices/list/
+    path('<int:device_id>/toggle/', views.toggle_device, name='toggle'),  # /devices/1/toggle/
+    path('<int:device_id>/delete/', views.delete_device, name='delete'),  # /devices/1/delete/
 ]

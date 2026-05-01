@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Qurilmalar{% endblock %}
+{% block page_title %}Qurilmalar boshqaruvi{% endblock %}
+{% block nav_devices %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'devices/css/devices.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ── ADD DEVICE CARD ── -->
+<div class="card">
+    <div class="card-title">
+        <div class="icon">📟</div>
+        Yangi qurilma qo'shish
+    </div>
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{% url 'devices:device_list' %}">
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Qurilma nomi</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="name" placeholder="Asosiy kirish qurilmasi" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>IP Manzil</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="ip_address" placeholder="192.168.1.100" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Foydalanuvchi nomi</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="username" placeholder="admin" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Parol</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </span>
+                    <input type="password" name="password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Qurilma turi</label>
+                <div class="select-wrap">
+                    <select name="device_type">
+                        <option value="entry">Kirish</option>
+                        <option value="exit">Chiqish</option>
+                        <option value="room">Xona</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Qurilma qo'shish
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ── DEVICE LIST CARD ── -->
+<div class="card">
+    <div class="table-header">
+        <h2>Qurilmalar ro'yxati</h2>
+        <div class="table-filters">
+            <div class="search-wrap">
+                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
+            </div>
+            <select class="status-select" id="statusFilter" onchange="filterTable()">
+                <option value="">Barchasi</option>
+                <option value="active">Faol</option>
+                <option value="inactive">Nofaol</option>
+            </select>
+        </div>
+    </div>
+
+    <table id="devicesTable">
+        <thead>
+            <tr>
+                <th>Qurilma nomi</th>
+                <th>IP Manzil</th>
+                <th>Turi</th>
+                <th>Holati</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in devices %}
+            <tr data-status="{% if d.is_active %}active{% else %}inactive{% endif %}">
+                <td class="name">{{ d.name }}</td>
+                <td>{{ d.ip_address }}</td>
+                <td>
+                    <span class="badge-type">{{ d.get_device_type_display }}</span>
+                </td>
+                <td>
+                    <button
+                        class="status-btn {% if d.is_active %}active{% else %}inactive{% endif %}"
+                        onclick="toggleDevice({{ d.id }}, this)"
+                    >
+                        {% if d.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </button>
+                </td>
+                <td>
+                    <button class="delete-btn" onclick="deleteDevice({{ d.id }}, this)">🗑</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="empty-row">
+                    Hech qanday qurilma topilmadi. Yuqorida yangi qurilma qo'shing.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const rows   = document.querySelectorAll('#devicesTable tbody tr[data-status]');
+    rows.forEach(function(row) {
+        const text      = row.textContent.toLowerCase();
+        const rowStatus = row.dataset.status;
+        const matchSearch = text.includes(search);
+        const matchStatus = !status || rowStatus === status;
+        row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+    });
+}
+
+function toggleDevice(deviceId, btn) {
+    fetch(`/devices/${deviceId}/toggle/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": getCSRFToken() }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const row = btn.closest('tr');
+            if (data.is_active) {
+                btn.innerText = "Faol";
+                btn.classList.remove("inactive");
+                btn.classList.add("active");
+                row.dataset.status = "active";
+            } else {
+                btn.innerText = "Nofaol";
+                btn.classList.remove("active");
+                btn.classList.add("inactive");
+                row.dataset.status = "inactive";
+            }
+        }
+    });
+}
+
+function deleteDevice(deviceId, btn) {
+    if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
+    fetch(`/devices/${deviceId}/delete/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": getCSRFToken() }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            btn.closest("tr").remove();
+        }
+    });
+}
+
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+}
+</script>
+{% endblock %}

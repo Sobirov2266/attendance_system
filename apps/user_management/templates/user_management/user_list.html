@@ -1,194 +1,206 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Foydalanuvchilar Ro'yxati{% endblock %}
+{% block title %}Foydalanuvchilar{% endblock %}
+{% block page_title %}Foydalanuvchilar boshqaruvi{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user_management/user_management.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2 class="mb-0">Foydalanuvchilar Boshqaruvi</h2>
-            <p class="text-muted">Jami: {{ total_users }} ta foydalanuvchi</p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'user_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Yangi Foydalanuvchi
-            </a>
-        </div>
+
+<!-- ── QO'SHISH CARD ── -->
+<div class="card">
+    <div class="card-title">
+        <div class="icon">👤</div>
+        Yangi foydalanuvchi qo'shish
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
     {% endif %}
 
-    <!-- Filtrlash Formasi -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label for="search" class="form-label">Qidirish</label>
-                    <input type="text" class="form-control" id="search" name="search" 
-                           value="{{ search_query }}" placeholder="Ism, familya yoki username">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Familya</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="last_name" placeholder="Familya" required>
                 </div>
-                <div class="col-md-3">
-                    <label for="position" class="form-label">Lavozim</label>
-                    <select class="form-control" id="position" name="position">
-                        <option value="">--- Barcha ---</option>
-                        {% for value, label in filter_form.position.field.choices %}
-                            {% if value %}
-                                <option value="{{ value }}" {% if request.GET.position == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                            {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Ism</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="first_name" placeholder="Ism" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Face ID</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="face_id" placeholder="HIK-00123" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>AIS ID</label>
+                <div class="input-wrap">
+                    <span class="input-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2"/>
+                            <path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/>
+                        </svg>
+                    </span>
+                    <input type="text" name="ais_id" placeholder="AIS-45678" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Lavozim</label>
+                <div class="select-wrap">
+                    <select name="role">
+                        {% for value, label in role_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label for="is_active" class="form-label">Holat</label>
-                    <select class="form-control" id="is_active" name="is_active">
-                        <option value="">--- Barcha ---</option>
-                        <option value="active" {% if request.GET.is_active == 'active' %}selected{% endif %}>Faol</option>
-                        <option value="inactive" {% if request.GET.is_active == 'inactive' %}selected{% endif %}>Nofaol</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-info w-100">
-                        <i class="fas fa-filter"></i> Filtrlash
-                    </button>
-                </div>
-            </form>
+            </div>
+
         </div>
-    </div>
 
-    <!-- Foydalanuvchilar Jadvali -->
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 25%;">To'liq Ismi</th>
-                        <th style="width: 20%;">Username</th>
-                        <th style="width: 15%;">Email</th>
-                        <th style="width: 15%;">Lavozim</th>
-                        <th style="width: 10%;">Holat</th>
-                        <th style="width: 15%;">Amallar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                        <tr>
-                            <td>
-                                <strong>
-                                    {% if user.profile %}
-                                        {{ user.profile.first_name }} {{ user.profile.last_name }}
-                                    {% else %}
-                                        {{ user.first_name }} {{ user.last_name }}
-                                    {% endif %}
-                                </strong>
-                            </td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.email|default:'-' }}</td>
-                            <td>
-                                {% if user.profile %}
-                                    <span class="badge bg-info">
-                                        {{ user.profile.get_position_display }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Noma'lum</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if user.profile.is_active %}
-                                    <span class="badge bg-success">Faol</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Nofaol</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'user_detail' user.id %}" class="btn btn-sm btn-info" title="Ko'rish">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'user_edit' user.id %}" class="btn btn-sm btn-warning" title="Tahrirlash">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'user_delete' user.id %}" class="btn btn-sm btn-danger" title="O'chirish">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                Foydalanuvchilar topilmadi
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Foydalanuvchi qo'shish
+            </button>
         </div>
-    </div>
-
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-        <nav aria-label="Page navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
-                            Birinchi
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                            Oldingi
-                        </a>
-                    </li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ num }}</span>
-                        </li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                                {{ num }}
-                            </a>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                            Keyingi
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                            Oxirgi
-                        </a>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
-    {% endif %}
+    </form>
 </div>
 
-<style>
-    .table-hover tbody tr:hover {
-        background-color: #f5f5f5;
-    }
-    
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-</style>
+<!-- ── RO'YXAT CARD ── -->
+<div class="card">
+    <div class="table-header">
+        <h2>Foydalanuvchilar ro'yxati</h2>
+        <div class="table-filters">
+            <div class="search-wrap">
+                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
+            </div>
+            <select class="status-select" id="roleFilter" onchange="filterTable()">
+                <option value="">Barchasi</option>
+                {% for value, label in role_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Familya Ism</th>
+                <th>Face ID</th>
+                <th>AIS ID</th>
+                <th>Lavozim</th>
+                <th>Qo'shilgan</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr data-role="{{ user.role }}">
+                <td class="row-num">{{ forloop.counter }}</td>
+                <td class="name">
+                    <div class="user-cell">
+                        <div class="user-avatar">{{ user.last_name|first|upper }}{{ user.first_name|first|upper }}</div>
+                        <span>{{ user.get_full_name }}</span>
+                    </div>
+                </td>
+                <td><span class="id-badge">{{ user.face_id }}</span></td>
+                <td><span class="id-badge">{{ user.ais_id }}</span></td>
+                <td>
+                    <span class="role-badge role-{{ user.role }}">
+                        {{ user.get_role_display }}
+                    </span>
+                </td>
+                <td class="date-cell">{{ user.created_at|date:"d.m.Y" }}</td>
+                <td>
+                    <button class="delete-btn" onclick="deleteUser({{ user.id }}, this)" title="O'chirish">🗑</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-row">
+                    Hech qanday foydalanuvchi topilmadi. Yuqorida yangi foydalanuvchi qo'shing.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const role   = document.getElementById('roleFilter').value;
+    document.querySelectorAll('#usersTable tbody tr[data-role]').forEach(row => {
+        const matchSearch = row.textContent.toLowerCase().includes(search);
+        const matchRole   = !role || row.dataset.role === role;
+        row.style.display = (matchSearch && matchRole) ? '' : 'none';
+    });
+}
+
+function deleteUser(userId, btn) {
+    if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
+    fetch(`/users/${userId}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) btn.closest('tr').remove();
+    });
+}
+
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(r => r.startsWith('csrftoken'))
+        ?.split('=')[1];
+}
+</script>
 {% endblock %}

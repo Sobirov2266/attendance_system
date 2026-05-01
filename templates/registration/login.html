@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="uz">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <title>AJOU Universiteti – Davomat tizimi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+
+<body>
+
+<div class="auth-wrapper">
+    <div class="login-container">
+
+        <!-- LOGO -->
+        <div class="logo">
+            <img src="{% static 'images/logo-ajou.png' %}" alt="AJOU Universiteti">
+            <h1>AJOU Universiteti</h1>
+            <p class="subtitle">Shaxsiy kabinetga kirish</p>
+        </div>
+
+        <!-- FORM -->
+        <form method="post" class="login-form" action="{% url 'login' %}">
+            {% csrf_token %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="input-group">
+                <label>
+                    <i class="fas fa-user"></i> Foydalanuvchi nomi
+                </label>
+                <input type="text" name="username" value="{{ form.username.value|default:'' }}" required autofocus>
+                {% if form.username.errors %}
+                    <div class="field-errors">{{ form.username.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="input-group">
+                <label>
+                    <i class="fas fa-lock"></i> Parol
+                </label>
+                <input type="password" name="password" required>
+                {% if form.password.errors %}
+                    <div class="field-errors">{{ form.password.errors }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="login-btn">
+                Tizimga kirish
+            </button>
+        </form>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p>© 2026 AJOU Universiteti</p>
+            <a href="#">Parolni unutdingizmi?</a>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
