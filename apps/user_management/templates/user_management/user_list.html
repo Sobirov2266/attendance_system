@@ -11,10 +11,9 @@
 
 {% block content %}
 
-<!-- ── QO'SHISH CARD ── -->
 <div class="card">
     <div class="card-title">
-        <div class="icon">👤</div>
+        <div class="icon"><i class="bi bi-person-plus"></i></div>
         Yangi foydalanuvchi qo'shish
     </div>
 
@@ -25,16 +24,10 @@
     <form method="post">
         {% csrf_token %}
         <div class="form-grid">
-
             <div class="form-group">
                 <label>Familya</label>
                 <div class="input-wrap">
-                    <span class="input-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </span>
+                    <span class="input-icon"><i class="bi bi-person"></i></span>
                     <input type="text" name="last_name" placeholder="Familya" required>
                 </div>
             </div>
@@ -42,12 +35,7 @@
             <div class="form-group">
                 <label>Ism</label>
                 <div class="input-wrap">
-                    <span class="input-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </span>
+                    <span class="input-icon"><i class="bi bi-person"></i></span>
                     <input type="text" name="first_name" placeholder="Ism" required>
                 </div>
             </div>
@@ -55,14 +43,7 @@
             <div class="form-group">
                 <label>Face ID</label>
                 <div class="input-wrap">
-                    <span class="input-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
-                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                            <line x1="9" y1="9" x2="9.01" y2="9"/>
-                            <line x1="15" y1="9" x2="15.01" y2="9"/>
-                        </svg>
-                    </span>
+                    <span class="input-icon"><i class="bi bi-person-bounding-box"></i></span>
                     <input type="text" name="face_id" placeholder="HIK-00123" required>
                 </div>
             </div>
@@ -70,12 +51,7 @@
             <div class="form-group">
                 <label>AIS ID</label>
                 <div class="input-wrap">
-                    <span class="input-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="7" width="20" height="14" rx="2"/>
-                            <path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/>
-                        </svg>
-                    </span>
+                    <span class="input-icon"><i class="bi bi-person-vcard"></i></span>
                     <input type="text" name="ais_id" placeholder="AIS-45678" required>
                 </div>
             </div>
@@ -91,37 +67,49 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <label>Holati</label>
+                <div class="select-wrap">
+                    <select name="is_active">
+                        <option value="active">Faol</option>
+                        <option value="inactive">Nofaol</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div class="form-footer">
             <button type="submit" class="btn-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
+                <i class="bi bi-plus-lg"></i>
                 Foydalanuvchi qo'shish
             </button>
         </div>
     </form>
 </div>
 
-<!-- ── RO'YXAT CARD ── -->
 <div class="card">
     <div class="table-header">
-        <h2>Foydalanuvchilar ro'yxati</h2>
+        <div>
+            <h2>Foydalanuvchilar ro'yxati</h2>
+            <div class="table-meta">
+                Jami: <strong>{{ total_users }}</strong> ta foydalanuvchi
+            </div>
+        </div>
         <div class="table-filters">
             <div class="search-wrap">
-                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
+                <i class="bi bi-search search-icon"></i>
                 <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
             </div>
             <select class="status-select" id="roleFilter" onchange="filterTable()">
-                <option value="">Barchasi</option>
+                <option value="">Barcha lavozimlar</option>
                 {% for value, label in role_choices %}
                     <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
+            </select>
+            <select class="status-select" id="statusFilter" onchange="filterTable()">
+                <option value="">Barcha holat</option>
+                <option value="active">Faol</option>
+                <option value="inactive">Nofaol</option>
             </select>
         </div>
     </div>
@@ -134,41 +122,175 @@
                 <th>Face ID</th>
                 <th>AIS ID</th>
                 <th>Lavozim</th>
+                <th>Holati</th>
                 <th>Qo'shilgan</th>
                 <th>Amallar</th>
             </tr>
         </thead>
         <tbody>
             {% for user in users %}
-            <tr data-role="{{ user.role }}">
-                <td class="row-num">{{ forloop.counter }}</td>
+            <tr
+                data-user-id="{{ user.id }}"
+                data-role="{{ user.role }}"
+                data-status="{% if user.is_active %}active{% else %}inactive{% endif %}"
+                data-first-name="{{ user.first_name }}"
+                data-last-name="{{ user.last_name }}"
+                data-face-id="{{ user.face_id }}"
+                data-ais-id="{{ user.ais_id }}"
+            >
+                <td class="row-num">{{ page_obj.start_index|add:forloop.counter0 }}</td>
                 <td class="name">
                     <div class="user-cell">
-                        <div class="user-avatar">{{ user.last_name|first|upper }}{{ user.first_name|first|upper }}</div>
-                        <span>{{ user.get_full_name }}</span>
+                        <div class="user-avatar user-initials">{{ user.last_name|first|upper }}{{ user.first_name|first|upper }}</div>
+                        <span class="user-full-name">{{ user.get_full_name }}</span>
                     </div>
                 </td>
-                <td><span class="id-badge">{{ user.face_id }}</span></td>
-                <td><span class="id-badge">{{ user.ais_id }}</span></td>
+                <td><span class="id-badge face-id-value">{{ user.face_id }}</span></td>
+                <td><span class="id-badge ais-id-value">{{ user.ais_id }}</span></td>
                 <td>
                     <span class="role-badge role-{{ user.role }}">
                         {{ user.get_role_display }}
                     </span>
                 </td>
-                <td class="date-cell">{{ user.created_at|date:"d.m.Y" }}</td>
                 <td>
-                    <button class="delete-btn" onclick="deleteUser({{ user.id }}, this)" title="O'chirish">🗑</button>
+                    <button
+                        class="status-btn {% if user.is_active %}active{% else %}inactive{% endif %}"
+                        onclick="toggleUserStatus({{ user.id }}, this)"
+                        title="Holatni almashtirish"
+                    >
+                        {% if user.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </button>
+                </td>
+                <td class="date-cell">{{ user.created_at|date:"d.m.Y" }}</td>
+                <td class="actions-cell">
+                    <button class="edit-btn" onclick="openEditModal({{ user.id }})" title="Tahrirlash">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteUser({{ user.id }}, this)" title="O'chirish">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="empty-row">
+                <td colspan="8" class="empty-row">
                     Hech qanday foydalanuvchi topilmadi. Yuqorida yangi foydalanuvchi qo'shing.
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-wrap">
+        <div class="pagination-info">
+            {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ total_users }}
+        </div>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="page-link" title="Oldingi">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled"><i class="bi bi-chevron-left"></i></span>
+            {% endif %}
+
+            {% for page_num in paginator.page_range %}
+                {% if page_num == page_obj.number %}
+                    <span class="page-link active">{{ page_num }}</span>
+                {% elif page_num >= page_obj.number|add:"-2" and page_num <= page_obj.number|add:"2" %}
+                    <a href="?page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="page-link" title="Keyingi">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled"><i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal-backdrop" id="editModal" aria-hidden="true">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Foydalanuvchini tahrirlash</h3>
+            <button type="button" class="modal-close" onclick="closeEditModal()" title="Yopish">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="alert alert-error modal-error" id="editError"></div>
+        <form id="editUserForm">
+            {% csrf_token %}
+            <input type="hidden" name="user_id" id="editUserId">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Familya</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-person"></i></span>
+                        <input type="text" name="last_name" id="editLastName" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ism</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-person"></i></span>
+                        <input type="text" name="first_name" id="editFirstName" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Face ID</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-person-bounding-box"></i></span>
+                        <input type="text" name="face_id" id="editFaceId" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>AIS ID</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-person-vcard"></i></span>
+                        <input type="text" name="ais_id" id="editAisId" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Lavozim</label>
+                    <div class="select-wrap">
+                        <select name="role" id="editRole">
+                            {% for value, label in role_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Holati</label>
+                    <div class="select-wrap">
+                        <select name="is_active" id="editStatus">
+                            <option value="active">Faol</option>
+                            <option value="inactive">Nofaol</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Bekor qilish</button>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check2"></i>
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {% endblock %}
@@ -177,12 +299,108 @@
 <script>
 function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const role   = document.getElementById('roleFilter').value;
+    const role = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+
     document.querySelectorAll('#usersTable tbody tr[data-role]').forEach(row => {
         const matchSearch = row.textContent.toLowerCase().includes(search);
-        const matchRole   = !role || row.dataset.role === role;
-        row.style.display = (matchSearch && matchRole) ? '' : 'none';
+        const matchRole = !role || row.dataset.role === role;
+        const matchStatus = !status || row.dataset.status === status;
+        row.style.display = (matchSearch && matchRole && matchStatus) ? '' : 'none';
     });
+}
+
+function openEditModal(userId) {
+    const row = document.querySelector(`#usersTable tr[data-user-id="${userId}"]`);
+    if (!row) return;
+
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editLastName').value = row.dataset.lastName || '';
+    document.getElementById('editFirstName').value = row.dataset.firstName || '';
+    document.getElementById('editFaceId').value = row.dataset.faceId || '';
+    document.getElementById('editAisId').value = row.dataset.aisId || '';
+    document.getElementById('editRole').value = row.dataset.role || 'student';
+    document.getElementById('editStatus').value = row.dataset.status || 'active';
+    document.getElementById('editError').style.display = 'none';
+
+    const modal = document.getElementById('editModal');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('editUserForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const userId = document.getElementById('editUserId').value;
+    const formData = new FormData(this);
+
+    fetch(`/users/${userId}/update/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        body: formData
+    })
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            const error = document.getElementById('editError');
+            error.textContent = data.error || 'Saqlashda xatolik yuz berdi.';
+            error.style.display = 'block';
+            return;
+        }
+        updateRow(data.user);
+        closeEditModal();
+    });
+});
+
+function updateRow(user) {
+    const row = document.querySelector(`#usersTable tr[data-user-id="${user.id}"]`);
+    if (!row) return;
+
+    row.dataset.firstName = user.first_name;
+    row.dataset.lastName = user.last_name;
+    row.dataset.faceId = user.face_id;
+    row.dataset.aisId = user.ais_id;
+    row.dataset.role = user.role;
+    row.dataset.status = user.is_active ? 'active' : 'inactive';
+
+    row.querySelector('.user-initials').textContent = user.initials;
+    row.querySelector('.user-full-name').textContent = user.full_name;
+    row.querySelector('.face-id-value').textContent = user.face_id;
+    row.querySelector('.ais-id-value').textContent = user.ais_id;
+
+    const roleBadge = row.querySelector('.role-badge');
+    roleBadge.className = `role-badge role-${user.role}`;
+    roleBadge.textContent = user.role_display;
+
+    setStatusButton(row.querySelector('.status-btn'), user.is_active);
+    filterTable();
+}
+
+function toggleUserStatus(userId, btn) {
+    fetch(`/users/${userId}/toggle/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const row = btn.closest('tr');
+            row.dataset.status = data.is_active ? 'active' : 'inactive';
+            setStatusButton(btn, data.is_active);
+            filterTable();
+        }
+    });
+}
+
+function setStatusButton(btn, isActive) {
+    btn.textContent = isActive ? 'Faol' : 'Nofaol';
+    btn.classList.toggle('active', isActive);
+    btn.classList.toggle('inactive', !isActive);
 }
 
 function deleteUser(userId, btn) {
@@ -202,5 +420,9 @@ function getCSRFToken() {
         .find(r => r.startsWith('csrftoken'))
         ?.split('=')[1];
 }
+
+document.getElementById('editModal').addEventListener('click', function(event) {
+    if (event.target === this) closeEditModal();
+});
 </script>
 {% endblock %}

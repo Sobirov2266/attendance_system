@@ -4,8 +4,8 @@ from django.db import models
 class UserProfile(models.Model):
 
     class Role(models.TextChoices):
-        TEACHER = 'teacher', "O'qituvchi"
         STUDENT = 'student', 'Talaba'
+        TEACHER = 'teacher', "O'qituvchi"
         STAFF   = 'staff',   'Xodim'
 
     face_id    = models.CharField(max_length=100, unique=True, default='', verbose_name="Face ID")
@@ -13,6 +13,7 @@ class UserProfile(models.Model):
     last_name  = models.CharField(max_length=100, verbose_name="Familya")
     first_name = models.CharField(max_length=100, verbose_name="Ism")
     role       = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT, verbose_name="Lavozim")
+    is_active  = models.BooleanField(default=True, verbose_name="Faol")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

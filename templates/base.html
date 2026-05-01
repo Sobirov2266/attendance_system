@@ -57,7 +57,7 @@
             <span class="nav-badge" id="badge-users"></span>
         </a>
 
-        <a href="#" class="nav-item {% block nav_groups %}{% endblock %}">
+        <a href="{% url 'groups:group_list' %}" class="nav-item {% block nav_groups %}{% endblock %}">
             <span class="nav-icon"><i class="bi bi-collection"></i></span>
             <span class="nav-label">Guruhlar</span>
         </a>

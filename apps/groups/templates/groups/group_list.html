@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Guruhlar{% endblock %}
+{% block page_title %}Guruhlar boshqaruvi{% endblock %}
+{% block nav_groups %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'groups/groups.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-collection"></i></div>
+        Yangi guruh qo'shish
+    </div>
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Group ID</label>
+                <div class="input-wrap">
+                    <span class="input-icon"><i class="bi bi-hash"></i></span>
+                    <input type="text" name="group_id" placeholder="CS-101" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Guruh nomi</label>
+                <div class="input-wrap">
+                    <span class="input-icon"><i class="bi bi-collection"></i></span>
+                    <input type="text" name="group_name" placeholder="Computer Science 101" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Holati</label>
+                <div class="select-wrap">
+                    <select name="is_active">
+                        <option value="active">Faol</option>
+                        <option value="inactive">Nofaol</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                Guruh qo'shish
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-header">
+        <div>
+            <h2>Guruhlar ro'yxati</h2>
+            <div class="table-meta">
+                Jami: <strong>{{ total_groups }}</strong> ta guruh
+            </div>
+        </div>
+        <div class="table-filters">
+            <div class="search-wrap">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
+            </div>
+            <select class="status-select" id="statusFilter" onchange="filterTable()">
+                <option value="">Barcha holat</option>
+                <option value="active">Faol</option>
+                <option value="inactive">Nofaol</option>
+            </select>
+        </div>
+    </div>
+
+    <table id="groupsTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Group ID</th>
+                <th>Guruh nomi</th>
+                <th>Holati</th>
+                <th>Qo'shilgan</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in groups %}
+            <tr
+                data-group-pk="{{ group.id }}"
+                data-group-id="{{ group.group_id }}"
+                data-group-name="{{ group.group_name }}"
+                data-status="{% if group.is_active %}active{% else %}inactive{% endif %}"
+            >
+                <td class="row-num">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                <td><span class="id-badge group-id-value">{{ group.group_id }}</span></td>
+                <td class="name group-name-value">{{ group.group_name }}</td>
+                <td>
+                    <button
+                        class="status-btn {% if group.is_active %}active{% else %}inactive{% endif %}"
+                        onclick="toggleGroupStatus({{ group.id }}, this)"
+                        title="Holatni almashtirish"
+                    >
+                        {% if group.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </button>
+                </td>
+                <td class="date-cell">{{ group.created_at|date:"d.m.Y" }}</td>
+                <td class="actions-cell">
+                    <button class="edit-btn" onclick="openEditModal({{ group.id }})" title="Tahrirlash">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteGroup({{ group.id }}, this)" title="O'chirish">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="empty-row">
+                    Hech qanday guruh topilmadi. Yuqorida yangi guruh qo'shing.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-wrap">
+        <div class="pagination-info">
+            {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ total_groups }}
+        </div>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="page-link" title="Oldingi">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled"><i class="bi bi-chevron-left"></i></span>
+            {% endif %}
+
+            {% for page_num in paginator.page_range %}
+                {% if page_num == page_obj.number %}
+                    <span class="page-link active">{{ page_num }}</span>
+                {% elif page_num >= page_obj.number|add:"-2" and page_num <= page_obj.number|add:"2" %}
+                    <a href="?page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="page-link" title="Keyingi">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled"><i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal-backdrop" id="editModal" aria-hidden="true">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Guruhni tahrirlash</h3>
+            <button type="button" class="modal-close" onclick="closeEditModal()" title="Yopish">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="alert alert-error modal-error" id="editError"></div>
+        <form id="editGroupForm">
+            {% csrf_token %}
+            <input type="hidden" name="group_pk" id="editGroupPk">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Group ID</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-hash"></i></span>
+                        <input type="text" name="group_id" id="editGroupId" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Guruh nomi</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-collection"></i></span>
+                        <input type="text" name="group_name" id="editGroupName" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Holati</label>
+                    <div class="select-wrap">
+                        <select name="is_active" id="editStatus">
+                            <option value="active">Faol</option>
+                            <option value="inactive">Nofaol</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Bekor qilish</button>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check2"></i>
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+
+    document.querySelectorAll('#groupsTable tbody tr[data-status]').forEach(row => {
+        const matchSearch = row.textContent.toLowerCase().includes(search);
+        const matchStatus = !status || row.dataset.status === status;
+        row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+    });
+}
+
+function openEditModal(groupPk) {
+    const row = document.querySelector(`#groupsTable tr[data-group-pk="${groupPk}"]`);
+    if (!row) return;
+
+    document.getElementById('editGroupPk').value = groupPk;
+    document.getElementById('editGroupId').value = row.dataset.groupId || '';
+    document.getElementById('editGroupName').value = row.dataset.groupName || '';
+    document.getElementById('editStatus').value = row.dataset.status || 'active';
+    document.getElementById('editError').style.display = 'none';
+
+    const modal = document.getElementById('editModal');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('editGroupForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const groupPk = document.getElementById('editGroupPk').value;
+    const formData = new FormData(this);
+
+    fetch(`/groups/${groupPk}/update/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        body: formData
+    })
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            const error = document.getElementById('editError');
+            error.textContent = data.error || 'Saqlashda xatolik yuz berdi.';
+            error.style.display = 'block';
+            return;
+        }
+        updateRow(data.group);
+        closeEditModal();
+    });
+});
+
+function updateRow(group) {
+    const row = document.querySelector(`#groupsTable tr[data-group-pk="${group.id}"]`);
+    if (!row) return;
+
+    row.dataset.groupId = group.group_id;
+    row.dataset.groupName = group.group_name;
+    row.dataset.status = group.is_active ? 'active' : 'inactive';
+    row.querySelector('.group-id-value').textContent = group.group_id;
+    row.querySelector('.group-name-value').textContent = group.group_name;
+    setStatusButton(row.querySelector('.status-btn'), group.is_active);
+    filterTable();
+}
+
+function toggleGroupStatus(groupPk, btn) {
+    fetch(`/groups/${groupPk}/toggle/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const row = btn.closest('tr');
+            row.dataset.status = data.is_active ? 'active' : 'inactive';
+            setStatusButton(btn, data.is_active);
+            filterTable();
+        }
+    });
+}
+
+function setStatusButton(btn, isActive) {
+    btn.textContent = isActive ? 'Faol' : 'Nofaol';
+    btn.classList.toggle('active', isActive);
+    btn.classList.toggle('inactive', !isActive);
+}
+
+function deleteGroup(groupPk, btn) {
+    if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
+    fetch(`/groups/${groupPk}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) btn.closest('tr').remove();
+    });
+}
+
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+}
+
+document.getElementById('editModal').addEventListener('click', function(event) {
+    if (event.target === this) closeEditModal();
+});
+</script>
+{% endblock %}

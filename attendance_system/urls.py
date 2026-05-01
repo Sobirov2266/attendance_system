@@ -16,4 +16,5 @@ urlpatterns = [
     # Qolgan app lar
     path('devices/', include('apps.devices.urls')),
     path('users/',   include('apps.user_management.urls')),
+    path('groups/',  include('apps.groups.urls')),
 ]
