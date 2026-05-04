@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'apps.user_management',
     'apps.groups',
     'apps.subjects',
+    'apps.rooms',
     'apps.core',
 ]
 

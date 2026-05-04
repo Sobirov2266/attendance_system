@@ -18,4 +18,5 @@ urlpatterns = [
     path('users/',   include('apps.user_management.urls')),
     path('groups/',  include('apps.groups.urls')),
     path('subjects/', include('apps.subjects.urls')),
+    path('rooms/', include('apps.rooms.urls')),
 ]

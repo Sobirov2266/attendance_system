@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Xonalar{% endblock %}
+{% block page_title %}Xonalar boshqaruvi{% endblock %}
+{% block nav_rooms %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user_management/user_management.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-door-plus"></i></div>
+        Yangi xona qo'shish
+    </div>
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Xona ID</label>
+                <div class="input-wrap">
+                    <span class="input-icon"><i class="bi bi-hash"></i></span>
+                    <input type="text" name="room_id" placeholder="A-101" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Xona nomi</label>
+                <div class="input-wrap">
+                    <span class="input-icon"><i class="bi bi-door-open"></i></span>
+                    <input type="text" name="room_name" placeholder="Amfiteatr A" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Holati</label>
+                <div class="select-wrap">
+                    <select name="is_active">
+                        <option value="active">Faol</option>
+                        <option value="inactive">Nofaol</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                Xona qo'shish
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-header">
+        <div>
+            <h2>Xonalar ro'yxati</h2>
+            <div class="table-meta">
+                Jami: <strong>{{ total_rooms }}</strong> ta xona
+            </div>
+        </div>
+        <div class="table-filters">
+            <div class="search-wrap">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
+            </div>
+            <select class="status-select" id="statusFilter" onchange="filterTable()">
+                <option value="">Barcha holat</option>
+                <option value="active">Faol</option>
+                <option value="inactive">Nofaol</option>
+            </select>
+        </div>
+    </div>
+
+    <table id="roomsTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Xona ID</th>
+                <th>Xona nomi</th>
+                <th>Holati</th>
+                <th>Qo'shilgan</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in rooms %}
+            <tr
+                data-room-pk="{{ room.id }}"
+                data-room-id="{{ room.room_id }}"
+                data-room-name="{{ room.room_name }}"
+                data-status="{% if room.is_active %}active{% else %}inactive{% endif %}"
+            >
+                <td class="row-num">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                <td><span class="id-badge room-id-value">{{ room.room_id }}</span></td>
+                <td class="name room-name-value">{{ room.room_name }}</td>
+                <td>
+                    <button
+                        class="status-btn {% if room.is_active %}active{% else %}inactive{% endif %}"
+                        title="Holatni almashtirish"
+                        type="button"
+                        data-action="toggle-status"
+                    >
+                        {% if room.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </button>
+                </td>
+                <td class="date-cell">{{ room.created_at|date:"d.m.Y" }}</td>
+                <td class="actions-cell">
+                    <button class="edit-btn" type="button" data-action="edit" title="Tahrirlash">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="delete-btn" type="button" data-action="delete" title="O'chirish">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="empty-row">
+                    Hech qanday xona topilmadi. Yuqorida yangi xona qo'shing.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-wrap">
+        <div class="pagination-info">
+            {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ total_rooms }}
+        </div>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="page-link" title="Oldingi">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled"><i class="bi bi-chevron-left"></i></span>
+            {% endif %}
+
+            {% for page_num in paginator.page_range %}
+                {% if page_num == page_obj.number %}
+                    <span class="page-link active">{{ page_num }}</span>
+                {% elif page_num >= page_obj.number|add:"-2" and page_num <= page_obj.number|add:"2" %}
+                    <a href="?page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="page-link" title="Keyingi">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            {% else %}
+                <span class="page-link disabled"><i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal-backdrop" id="editModal" aria-hidden="true">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Xonani tahrirlash</h3>
+            <button type="button" class="modal-close" onclick="closeEditModal()" title="Yopish">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="alert alert-error modal-error" id="editError"></div>
+        <form id="editRoomForm">
+            {% csrf_token %}
+            <input type="hidden" name="room_pk" id="editRoomPk">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Xona ID</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-hash"></i></span>
+                        <input type="text" name="room_id" id="editRoomId" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Xona nomi</label>
+                    <div class="input-wrap">
+                        <span class="input-icon"><i class="bi bi-door-open"></i></span>
+                        <input type="text" name="room_name" id="editRoomName" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Holati</label>
+                    <div class="select-wrap">
+                        <select name="is_active" id="editStatus">
+                            <option value="active">Faol</option>
+                            <option value="inactive">Nofaol</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Bekor qilish</button>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-check2"></i>
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+
+    document.querySelectorAll('#roomsTable tbody tr[data-status]').forEach(row => {
+        const matchSearch = row.textContent.toLowerCase().includes(search);
+        const matchStatus = !status || row.dataset.status === status;
+        row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+    });
+}
+
+function openEditModal(roomPk) {
+    const row = document.querySelector(`#roomsTable tr[data-room-pk='${roomPk}']`);
+    if (!row) return;
+
+    document.getElementById('editRoomPk').value = roomPk;
+    document.getElementById('editRoomId').value = row.dataset.roomId || '';
+    document.getElementById('editRoomName').value = row.dataset.roomName || '';
+    document.getElementById('editStatus').value = row.dataset.status || 'active';
+    document.getElementById('editError').style.display = 'none';
+
+    const modal = document.getElementById('editModal');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('editRoomForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const roomPk = document.getElementById('editRoomPk').value;
+    const formData = new FormData(this);
+
+    fetch(`/rooms/${roomPk}/update/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        body: formData
+    })
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            const error = document.getElementById('editError');
+            error.textContent = data.error || 'Saqlashda xatolik yuz berdi.';
+            error.style.display = 'block';
+            return;
+        }
+        updateRow(data.room);
+        closeEditModal();
+    });
+});
+
+function updateRow(room) {
+    const row = document.querySelector(`#roomsTable tr[data-room-pk='${room.id}']`);
+    if (!row) return;
+
+    row.dataset.roomId = room.room_id;
+    row.dataset.roomName = room.room_name;
+    row.dataset.status = room.is_active ? 'active' : 'inactive';
+    row.querySelector('.room-id-value').textContent = room.room_id;
+    row.querySelector('.room-name-value').textContent = room.room_name;
+    setStatusButton(row.querySelector('.status-btn'), room.is_active);
+    filterTable();
+}
+
+function toggleRoomStatus(roomPk, btn) {
+    fetch(`/rooms/${roomPk}/toggle/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const row = btn.closest('tr');
+            row.dataset.status = data.is_active ? 'active' : 'inactive';
+            setStatusButton(btn, data.is_active);
+            filterTable();
+        }
+    });
+}
+
+function setStatusButton(btn, isActive) {
+    btn.textContent = isActive ? 'Faol' : 'Nofaol';
+    btn.classList.toggle('active', isActive);
+    btn.classList.toggle('inactive', !isActive);
+}
+
+function deleteRoom(roomPk, btn) {
+    if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
+    fetch(`/rooms/${roomPk}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) btn.closest('tr').remove();
+    });
+}
+
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+}
+
+document.getElementById('roomsTable').addEventListener('click', function(event) {
+    const btn = event.target.closest('button');
+    if (!btn) return;
+    const row = btn.closest('tr[data-room-pk]');
+    if (!row) return;
+
+    const roomPk = row.dataset.roomPk;
+    const action = btn.dataset.action;
+
+    if (action === 'toggle-status') {
+        toggleRoomStatus(roomPk, btn);
+    } else if (action === 'edit') {
+        openEditModal(roomPk);
+    } else if (action === 'delete') {
+        deleteRoom(roomPk, btn);
+    }
+});
+
+document.getElementById('editModal').addEventListener('click', function(event) {
+    if (event.target === this) closeEditModal();
+});
+</script>
+{% endblock %}
