@@ -1,20 +1,20 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Guruhlar{% endblock %}
-{% block page_title %}Guruhlar boshqaruvi{% endblock %}
-{% block nav_groups %}active{% endblock %}
+{% block title %}Fanlar{% endblock %}
+{% block page_title %}Fanlar boshqaruvi{% endblock %}
+{% block nav_subjects %}active{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'groups/groups.css' %}">
+<link rel="stylesheet" href="{% static 'user_management/user_management.css' %}">
 {% endblock %}
 
 {% block content %}
 
 <div class="card">
     <div class="card-title">
-        <div class="icon"><i class="bi bi-collection"></i></div>
-        Yangi guruh qo'shish
+        <div class="icon"><i class="bi bi-journal-plus"></i></div>
+        Yangi fan qo'shish
     </div>
 
     {% if error %}
@@ -25,18 +25,18 @@
         {% csrf_token %}
         <div class="form-grid">
             <div class="form-group">
-                <label>Group ID</label>
+                <label>Fan ID</label>
                 <div class="input-wrap">
                     <span class="input-icon"><i class="bi bi-hash"></i></span>
-                    <input type="text" name="group_id" placeholder="CS-101" required>
+                    <input type="text" name="subject_id" placeholder="MATH-101" required>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Guruh nomi</label>
+                <label>Fan nomi</label>
                 <div class="input-wrap">
-                    <span class="input-icon"><i class="bi bi-collection"></i></span>
-                    <input type="text" name="group_name" placeholder="Computer Science 101" required>
+                    <span class="input-icon"><i class="bi bi-journal-text"></i></span>
+                    <input type="text" name="subject_name" placeholder="Matematika" required>
                 </div>
             </div>
 
@@ -54,7 +54,7 @@
         <div class="form-footer">
             <button type="submit" class="btn-primary">
                 <i class="bi bi-plus-lg"></i>
-                Guruh qo'shish
+                Fan qo'shish
             </button>
         </div>
     </form>
@@ -63,9 +63,9 @@
 <div class="card">
     <div class="table-header">
         <div>
-            <h2>Guruhlar ro'yxati</h2>
+            <h2>Fanlar ro'yxati</h2>
             <div class="table-meta">
-                Jami: <strong>{{ total_groups }}</strong> ta guruh
+                Jami: <strong>{{ total_subjects }}</strong> ta fan
             </div>
         </div>
         <div class="table-filters">
@@ -81,57 +81,52 @@
         </div>
     </div>
 
-    <table id="groupsTable">
+    <table id="subjectsTable">
         <thead>
             <tr>
                 <th>#</th>
-                <th>Group ID</th>
-                <th>Guruh nomi</th>
-                <th>Talabalar</th>
+                <th>Fan ID</th>
+                <th>Fan nomi</th>
                 <th>Holati</th>
                 <th>Qo'shilgan</th>
                 <th>Amallar</th>
             </tr>
         </thead>
         <tbody>
-            {% for group in groups %}
+            {% for subject in subjects %}
             <tr
-                data-group-pk="{{ group.id }}"
-                data-group-id="{{ group.group_id }}"
-                data-group-name="{{ group.group_name }}"
-                data-status="{% if group.is_active %}active{% else %}inactive{% endif %}"
+                data-subject-pk="{{ subject.id }}"
+                data-subject-id="{{ subject.subject_id }}"
+                data-subject-name="{{ subject.subject_name }}"
+                data-status="{% if subject.is_active %}active{% else %}inactive{% endif %}"
             >
                 <td class="row-num">{{ page_obj.start_index|add:forloop.counter0 }}</td>
-                <td><span class="id-badge group-id-value">{{ group.group_id }}</span></td>
-                <td class="name group-name-value">{{ group.group_name }}</td>
-                <td>
-                    <a class="students-btn" href="{% url 'groups:group_students' group.id %}" title="Talabalar">
-                        {{ group.students_count }}
-                    </a>
-                </td>
+                <td><span class="id-badge subject-id-value">{{ subject.subject_id }}</span></td>
+                <td class="name subject-name-value">{{ subject.subject_name }}</td>
                 <td>
                     <button
-                        class="status-btn {% if group.is_active %}active{% else %}inactive{% endif %}"
-                        onclick="toggleGroupStatus({{ group.id }}, this)"
+                        class="status-btn {% if subject.is_active %}active{% else %}inactive{% endif %}"
                         title="Holatni almashtirish"
+                        type="button"
+                        data-action="toggle-status"
                     >
-                        {% if group.is_active %}Faol{% else %}Nofaol{% endif %}
+                        {% if subject.is_active %}Faol{% else %}Nofaol{% endif %}
                     </button>
                 </td>
-                <td class="date-cell">{{ group.created_at|date:"d.m.Y" }}</td>
+                <td class="date-cell">{{ subject.created_at|date:"d.m.Y" }}</td>
                 <td class="actions-cell">
-                    <button class="edit-btn" onclick="openEditModal({{ group.id }})" title="Tahrirlash">
+                    <button class="edit-btn" type="button" data-action="edit" title="Tahrirlash">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="delete-btn" onclick="deleteGroup({{ group.id }}, this)" title="O'chirish">
+                    <button class="delete-btn" type="button" data-action="delete" title="O'chirish">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="empty-row">
-                    Hech qanday guruh topilmadi. Yuqorida yangi guruh qo'shing.
+                <td colspan="6" class="empty-row">
+                    Hech qanday fan topilmadi. Yuqorida yangi fan qo'shing.
                 </td>
             </tr>
             {% endfor %}
@@ -141,7 +136,7 @@
     {% if page_obj.has_other_pages %}
     <div class="pagination-wrap">
         <div class="pagination-info">
-            {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ total_groups }}
+            {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ total_subjects }}
         </div>
         <div class="pagination">
             {% if page_obj.has_previous %}
@@ -175,29 +170,29 @@
 <div class="modal-backdrop" id="editModal" aria-hidden="true">
     <div class="modal">
         <div class="modal-header">
-            <h3>Guruhni tahrirlash</h3>
+            <h3>Fanni tahrirlash</h3>
             <button type="button" class="modal-close" onclick="closeEditModal()" title="Yopish">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
         <div class="alert alert-error modal-error" id="editError"></div>
-        <form id="editGroupForm">
+        <form id="editSubjectForm">
             {% csrf_token %}
-            <input type="hidden" name="group_pk" id="editGroupPk">
+            <input type="hidden" name="subject_pk" id="editSubjectPk">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Group ID</label>
+                    <label>Fan ID</label>
                     <div class="input-wrap">
                         <span class="input-icon"><i class="bi bi-hash"></i></span>
-                        <input type="text" name="group_id" id="editGroupId" required>
+                        <input type="text" name="subject_id" id="editSubjectId" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Guruh nomi</label>
+                    <label>Fan nomi</label>
                     <div class="input-wrap">
-                        <span class="input-icon"><i class="bi bi-collection"></i></span>
-                        <input type="text" name="group_name" id="editGroupName" required>
+                        <span class="input-icon"><i class="bi bi-journal-text"></i></span>
+                        <input type="text" name="subject_name" id="editSubjectName" required>
                     </div>
                 </div>
 
@@ -231,20 +226,20 @@ function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const status = document.getElementById('statusFilter').value;
 
-    document.querySelectorAll('#groupsTable tbody tr[data-status]').forEach(row => {
+    document.querySelectorAll('#subjectsTable tbody tr[data-status]').forEach(row => {
         const matchSearch = row.textContent.toLowerCase().includes(search);
         const matchStatus = !status || row.dataset.status === status;
         row.style.display = (matchSearch && matchStatus) ? '' : 'none';
     });
 }
 
-function openEditModal(groupPk) {
-    const row = document.querySelector(`#groupsTable tr[data-group-pk="${groupPk}"]`);
+function openEditModal(subjectPk) {
+    const row = document.querySelector(`#subjectsTable tr[data-subject-pk='${subjectPk}']`);
     if (!row) return;
 
-    document.getElementById('editGroupPk').value = groupPk;
-    document.getElementById('editGroupId').value = row.dataset.groupId || '';
-    document.getElementById('editGroupName').value = row.dataset.groupName || '';
+    document.getElementById('editSubjectPk').value = subjectPk;
+    document.getElementById('editSubjectId').value = row.dataset.subjectId || '';
+    document.getElementById('editSubjectName').value = row.dataset.subjectName || '';
     document.getElementById('editStatus').value = row.dataset.status || 'active';
     document.getElementById('editError').style.display = 'none';
 
@@ -259,12 +254,12 @@ function closeEditModal() {
     modal.setAttribute('aria-hidden', 'true');
 }
 
-document.getElementById('editGroupForm').addEventListener('submit', function(event) {
+document.getElementById('editSubjectForm').addEventListener('submit', function(event) {
     event.preventDefault();
-    const groupPk = document.getElementById('editGroupPk').value;
+    const subjectPk = document.getElementById('editSubjectPk').value;
     const formData = new FormData(this);
 
-    fetch(`/groups/${groupPk}/update/`, {
+    fetch(`/subjects/${subjectPk}/update/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() },
         body: formData
@@ -277,26 +272,26 @@ document.getElementById('editGroupForm').addEventListener('submit', function(eve
             error.style.display = 'block';
             return;
         }
-        updateRow(data.group);
+        updateRow(data.subject);
         closeEditModal();
     });
 });
 
-function updateRow(group) {
-    const row = document.querySelector(`#groupsTable tr[data-group-pk="${group.id}"]`);
+function updateRow(subject) {
+    const row = document.querySelector(`#subjectsTable tr[data-subject-pk='${subject.id}']`);
     if (!row) return;
 
-    row.dataset.groupId = group.group_id;
-    row.dataset.groupName = group.group_name;
-    row.dataset.status = group.is_active ? 'active' : 'inactive';
-    row.querySelector('.group-id-value').textContent = group.group_id;
-    row.querySelector('.group-name-value').textContent = group.group_name;
-    setStatusButton(row.querySelector('.status-btn'), group.is_active);
+    row.dataset.subjectId = subject.subject_id;
+    row.dataset.subjectName = subject.subject_name;
+    row.dataset.status = subject.is_active ? 'active' : 'inactive';
+    row.querySelector('.subject-id-value').textContent = subject.subject_id;
+    row.querySelector('.subject-name-value').textContent = subject.subject_name;
+    setStatusButton(row.querySelector('.status-btn'), subject.is_active);
     filterTable();
 }
 
-function toggleGroupStatus(groupPk, btn) {
-    fetch(`/groups/${groupPk}/toggle/`, {
+function toggleSubjectStatus(subjectPk, btn) {
+    fetch(`/subjects/${subjectPk}/toggle/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() }
     })
@@ -317,9 +312,9 @@ function setStatusButton(btn, isActive) {
     btn.classList.toggle('inactive', !isActive);
 }
 
-function deleteGroup(groupPk, btn) {
+function deleteSubject(subjectPk, btn) {
     if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
-    fetch(`/groups/${groupPk}/delete/`, {
+    fetch(`/subjects/${subjectPk}/delete/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() }
     })
@@ -334,6 +329,24 @@ function getCSRFToken() {
         .find(row => row.startsWith('csrftoken'))
         ?.split('=')[1];
 }
+
+document.getElementById('subjectsTable').addEventListener('click', function(event) {
+    const btn = event.target.closest('button');
+    if (!btn) return;
+    const row = btn.closest('tr[data-subject-pk]');
+    if (!row) return;
+
+    const subjectPk = row.dataset.subjectPk;
+    const action = btn.dataset.action;
+
+    if (action === 'toggle-status') {
+        toggleSubjectStatus(subjectPk, btn);
+    } else if (action === 'edit') {
+        openEditModal(subjectPk);
+    } else if (action === 'delete') {
+        deleteSubject(subjectPk, btn);
+    }
+});
 
 document.getElementById('editModal').addEventListener('click', function(event) {
     if (event.target === this) closeEditModal();

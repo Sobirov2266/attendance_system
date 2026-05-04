@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Guruh Talabalari{% endblock %}
+{% block page_title %}{{ group.group_name }} talabalari{% endblock %}
+{% block nav_groups %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'groups/groups.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-actions">
+    <a href="{% url 'groups:group_list' %}" class="btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Guruhlarga qaytish
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-person-plus"></i></div>
+        Guruhga talaba biriktirish
+    </div>
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="group-summary">
+        <span><strong>Group ID:</strong> {{ group.group_id }}</span>
+        <span><strong>Guruh:</strong> {{ group.group_name }}</span>
+        <span class="status-pill {% if group.is_active %}active{% else %}inactive{% endif %}">
+            {% if group.is_active %}Faol{% else %}Nofaol{% endif %}
+        </span>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="table-header assignment-header">
+            <div>
+                <h2>Biriktirilmagan talabalar</h2>
+                <div class="table-meta">
+                    Ro'yxatda faqat active guruhga ega bo'lmagan talabalar chiqadi
+                </div>
+            </div>
+            <div class="table-filters">
+                <div class="search-wrap">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="availableSearch" placeholder="Qidirish..." oninput="filterAvailableStudents()">
+                </div>
+            </div>
+        </div>
+
+        <table id="availableStudentsTable">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Familya Ism</th>
+                    <th>Face ID</th>
+                    <th>AIS ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in available_students %}
+                <tr>
+                    <td class="check-cell">
+                        <input type="checkbox" name="students" value="{{ student.id }}">
+                    </td>
+                    <td class="name">{{ student.get_full_name }}</td>
+                    <td><span class="id-badge">{{ student.face_id }}</span></td>
+                    <td><span class="id-badge">{{ student.ais_id }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="empty-row">
+                        Biriktirilmagan active talabalar topilmadi.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                Tanlanganlarni biriktirish
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-header">
+        <div>
+            <h2>Guruhdagi talabalar</h2>
+            <div class="table-meta">
+                Jami: <strong>{{ memberships|length }}</strong> ta biriktirish
+            </div>
+        </div>
+        <div class="table-filters">
+            <div class="search-wrap">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="assignedSearch" placeholder="Qidirish..." oninput="filterAssignedStudents()">
+            </div>
+            <select class="status-select" id="assignedStatusFilter" onchange="filterAssignedStudents()">
+                <option value="">Barcha holat</option>
+                <option value="active">Faol</option>
+                <option value="inactive">Nofaol</option>
+            </select>
+        </div>
+    </div>
+
+    <table id="assignedStudentsTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Familya Ism</th>
+                <th>Face ID</th>
+                <th>AIS ID</th>
+                <th>Holati</th>
+                <th>Biriktirilgan</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for membership in memberships %}
+            <tr data-status="{% if membership.is_active %}active{% else %}inactive{% endif %}">
+                <td class="row-num">{{ forloop.counter }}</td>
+                <td class="name">{{ membership.student.get_full_name }}</td>
+                <td><span class="id-badge">{{ membership.student.face_id }}</span></td>
+                <td><span class="id-badge">{{ membership.student.ais_id }}</span></td>
+                <td>
+                    <button
+                        class="status-btn {% if membership.is_active %}active{% else %}inactive{% endif %}"
+                        onclick="toggleMembership({{ membership.id }}, this)"
+                    >
+                        {% if membership.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </button>
+                </td>
+                <td class="date-cell">{{ membership.joined_at|date:"d.m.Y" }}</td>
+                <td class="actions-cell">
+                    <button class="delete-btn" onclick="deleteMembership({{ membership.id }}, this)" title="O'chirish">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-row">
+                    Bu guruhga hali talaba biriktirilmagan.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterAvailableStudents() {
+    const search = document.getElementById('availableSearch').value.toLowerCase();
+    document.querySelectorAll('#availableStudentsTable tbody tr').forEach(row => {
+        if (row.querySelector('.empty-row')) return;
+        row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
+    });
+}
+
+function filterAssignedStudents() {
+    const search = document.getElementById('assignedSearch').value.toLowerCase();
+    const status = document.getElementById('assignedStatusFilter').value;
+
+    document.querySelectorAll('#assignedStudentsTable tbody tr[data-status]').forEach(row => {
+        const matchSearch = row.textContent.toLowerCase().includes(search);
+        const matchStatus = !status || row.dataset.status === status;
+        row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+    });
+}
+
+function toggleMembership(membershipId, btn) {
+    fetch(`/groups/memberships/${membershipId}/toggle/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            alert(data.error || "Holatni o'zgartirishda xatolik yuz berdi.");
+            return;
+        }
+        const row = btn.closest('tr');
+        row.dataset.status = data.is_active ? 'active' : 'inactive';
+        btn.textContent = data.is_active ? 'Faol' : 'Nofaol';
+        btn.classList.toggle('active', data.is_active);
+        btn.classList.toggle('inactive', !data.is_active);
+        filterAssignedStudents();
+    });
+}
+
+function deleteMembership(membershipId, btn) {
+    if (!confirm("Talabani guruhdan olib tashlamoqchimisiz?")) return;
+
+    fetch(`/groups/memberships/${membershipId}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) btn.closest('tr').remove();
+    });
+}
+
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+}
+</script>
+{% endblock %}

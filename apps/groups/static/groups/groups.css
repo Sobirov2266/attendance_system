@@ -82,6 +82,12 @@
 
 .form-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 
+.page-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+}
+
 .btn-primary,
 .btn-secondary {
     display: inline-flex;
@@ -152,6 +158,34 @@ tbody td { padding: 13px 12px; font-size: 14px; color: #111827; vertical-align: 
 .name { font-weight: 600; }
 .date-cell { color: #6b7280; font-size: 13px; }
 .empty-row { text-align: center; color: #6b7280; font-size: 14px; padding: 40px !important; }
+.check-cell { width: 36px; }
+.check-cell input { width: 16px; height: 16px; cursor: pointer; }
+
+.group-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+    color: #374151;
+    font-size: 13px;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.status-pill.active { background: #dcfce7; color: #15803d; }
+.status-pill.inactive { background: #fee2e2; color: #991b1b; }
+.assignment-header { margin-top: 4px; }
 
 .id-badge {
     display: inline-block;
@@ -177,6 +211,7 @@ tbody td { padding: 13px 12px; font-size: 14px; color: #111827; vertical-align: 
 .status-btn.inactive { background: #fee2e2; color: #991b1b; }
 
 .actions-cell { display: flex; align-items: center; gap: 8px; }
+.students-btn,
 .edit-btn,
 .delete-btn,
 .modal-close {
@@ -188,6 +223,15 @@ tbody td { padding: 13px 12px; font-size: 14px; color: #111827; vertical-align: 
     font-size: 14px;
     transition: background .15s;
 }
+.students-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ede9fe;
+    color: #6d28d9;
+    text-decoration: none;
+}
+.students-btn:hover { background: #ddd6fe; }
 .edit-btn { background: #e0f2fe; color: #0369a1; }
 .edit-btn:hover { background: #bae6fd; }
 .delete-btn { background: #fee2e2; color: #991b1b; }

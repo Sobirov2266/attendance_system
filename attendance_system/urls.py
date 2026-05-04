@@ -17,4 +17,5 @@ urlpatterns = [
     path('devices/', include('apps.devices.urls')),
     path('users/',   include('apps.user_management.urls')),
     path('groups/',  include('apps.groups.urls')),
+    path('subjects/', include('apps.subjects.urls')),
 ]

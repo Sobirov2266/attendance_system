@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'apps.devices',
     'apps.user_management',
     'apps.groups',
+    'apps.subjects',
     'apps.core',
 ]
 
