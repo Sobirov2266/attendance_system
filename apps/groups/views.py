@@ -1,18 +1,33 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from attendance_system.spreadsheet import build_xlsx, parse_active_value, read_xlsx
 from apps.user_management.models import UserProfile
 
 from .models import Group, GroupStudent
 
 
+GROUP_IMPORT_HEADERS = ['Group ID', 'Guruh nomi', 'Holati']
+GROUP_IMPORT_SAMPLE = [['CS-101', 'Computer Science 101', 'Faol']]
+
+
 def _posted_is_active(request):
     return request.POST.get('is_active') == 'active'
+
+
+def _excel_response(filename, headers, example_rows, sheet_name):
+    response = HttpResponse(
+        build_xlsx(headers, example_rows, sheet_name=sheet_name),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required
@@ -43,7 +58,7 @@ def group_list(request):
             filter=Q(student_memberships__is_active=True),
             distinct=True,
         )
-    )
+    ).order_by('group_name')
     paginator = Paginator(groups_queryset, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
@@ -54,6 +69,61 @@ def group_list(request):
         'total_groups': paginator.count,
         'error': error,
     })
+
+
+@login_required
+def download_group_template(request):
+    return _excel_response(
+        'guruhlar_import_shablon.xlsx',
+        GROUP_IMPORT_HEADERS,
+        GROUP_IMPORT_SAMPLE,
+        'Guruhlar',
+    )
+
+
+@login_required
+@require_POST
+def import_groups(request):
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        messages.error(request, 'Import uchun Excel fayl tanlang.')
+        return redirect('groups:group_list')
+
+    try:
+        rows = read_xlsx(uploaded_file)
+        created_count = 0
+        updated_count = 0
+        with transaction.atomic():
+            for row_number, row in enumerate(rows, start=2):
+                group_id = row.get('Group ID', '').strip()
+                group_name = row.get('Guruh nomi', '').strip()
+                is_active = parse_active_value(row.get('Holati', ''), default=True)
+
+                if not all([group_id, group_name]):
+                    raise ValueError(f'{row_number}-qatorda barcha ustunlar to`ldirilishi kerak.')
+
+                group = Group.objects.filter(group_id=group_id).first()
+                if group:
+                    group.group_name = group_name
+                    group.is_active = is_active
+                    group.save(update_fields=['group_name', 'is_active'])
+                    updated_count += 1
+                else:
+                    Group.objects.create(
+                        group_id=group_id,
+                        group_name=group_name,
+                        is_active=is_active,
+                    )
+                    created_count += 1
+    except Exception as exc:
+        messages.error(request, f'Import xatoligi: {exc}')
+        return redirect('groups:group_list')
+
+    messages.success(
+        request,
+        f'Guruhlar import qilindi: {created_count} ta yangi, {updated_count} ta yangilandi.',
+    )
+    return redirect('groups:group_list')
 
 
 @login_required

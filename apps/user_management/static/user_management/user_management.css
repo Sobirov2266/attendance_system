@@ -106,6 +106,78 @@
 .btn-primary:hover  { background: #6d28d9; transform: translateY(-1px); }
 .btn-primary:active { transform: translateY(0); }
 
+.import-card {
+    padding: 22px 24px;
+}
+
+.import-card-title {
+    margin-bottom: 6px;
+}
+
+.import-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.import-help {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.import-panel {
+    display: none;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #eef2f7;
+}
+
+.import-panel.show {
+    display: block;
+}
+
+.import-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.import-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.file-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #334155;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.file-trigger input {
+    display: none;
+}
+
+.selected-file-name {
+    color: #64748b;
+    font-size: 13px;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Table header */
 .table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .table-header h2 { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 4px; }
@@ -153,6 +225,48 @@ thead th {
     padding: 10px 12px;
     border-bottom: 1.5px solid #e5e7eb;
 }
+
+.column-filter-row th {
+    padding: 8px 10px;
+    background: #f3f6fb;
+}
+
+.column-filter-row input,
+.column-filter-row select {
+    width: 100%;
+    min-width: 90px;
+    height: 34px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 9px;
+}
+
+.column-filter-row input:focus,
+.column-filter-row select:focus {
+    outline: none;
+    border-color: #7c3aed;
+}
+
+.clear-column-filters {
+    height: 34px;
+    padding: 0 10px;
+    border: 1.5px solid #fecaca;
+    border-radius: 8px;
+    background: #fff7f7;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.clear-column-filters:hover {
+    background: #fee2e2;
+}
+
 tbody tr { border-bottom: 1px solid #f3f4f6; transition: background .12s; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: #fafaff; }
@@ -346,6 +460,10 @@ td.name, .user-cell span { font-weight: 600; }
     .card { padding: 20px 18px; }
     .table-header { flex-direction: column; align-items: flex-start; gap: 12px; }
     .table-filters { flex-wrap: wrap; }
+    .import-toolbar { flex-direction: column; align-items: stretch; }
+    .import-actions,
+    .import-form { align-items: stretch; }
+    .selected-file-name { max-width: 100%; }
     .select-wrap { width: 100%; }
     .pagination-wrap { flex-direction: column; align-items: flex-start; }
     .pagination { flex-wrap: wrap; }

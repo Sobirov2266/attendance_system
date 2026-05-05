@@ -7,166 +7,212 @@
 
 {% block content %}
 
-<!-- ===== STAT CARDS ===== -->
-<section class="stats-grid">
+<section class="dashboard-hero">
+    <div>
+        <span class="dashboard-kicker">FaceID Attendance</span>
+        <h1>Tizim statistikasi</h1>
+        <p>Foydalanuvchilar, qurilmalar, guruhlar va dars jadvali bo'yicha umumiy holat.</p>
+    </div>
+    <div class="hero-metrics">
+        <div>
+            <span class="hero-value">{{ active_users }}</span>
+            <span class="hero-label">faol foydalanuvchi</span>
+        </div>
+        <div>
+            <span class="hero-value">{{ active_lesson_slot_count }}</span>
+            <span class="hero-label">faol dars sloti</span>
+        </div>
+    </div>
+</section>
 
-    <!-- Qurilmalar -->
+<section class="stats-grid stats-grid-extended">
     <div class="stat-card" data-color="blue">
         <div class="stat-card-inner">
-            <div class="stat-icon-wrap">
-                <div class="stat-icon">
-                    <i class="bi bi-camera-video-fill"></i>
-                </div>
-                <div class="stat-pulse"></div>
-            </div>
+            <div class="stat-icon-wrap"><div class="stat-icon"><i class="bi bi-camera-video-fill"></i></div></div>
             <div class="stat-body">
                 <span class="stat-label">Qurilmalar</span>
                 <span class="stat-value" data-target="{{ device_count|default:0 }}">0</span>
-                <span class="stat-sub">
-                    <i class="bi bi-circle-fill text-success"></i>
-                    {{ online_devices|default:0 }} online
-                </span>
+                <span class="stat-sub">{{ online_devices }} faol, {{ offline_devices }} nofaol</span>
             </div>
         </div>
-        <a href="{% url 'devices:device_list' %}" class="stat-link">
-            Ko'rish <i class="bi bi-arrow-right"></i>
-        </a>
+        <a href="{% url 'devices:device_list' %}" class="stat-link">Ko'rish <i class="bi bi-arrow-right"></i></a>
     </div>
 
-    <!-- Foydalanuvchilar -->
     <div class="stat-card" data-color="green">
         <div class="stat-card-inner">
-            <div class="stat-icon-wrap">
-                <div class="stat-icon">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-                <div class="stat-pulse"></div>
-            </div>
+            <div class="stat-icon-wrap"><div class="stat-icon"><i class="bi bi-people-fill"></i></div></div>
             <div class="stat-body">
                 <span class="stat-label">Foydalanuvchilar</span>
                 <span class="stat-value" data-target="{{ user_count|default:0 }}">0</span>
-                <span class="stat-sub">
-                    <i class="bi bi-person-plus"></i>
-                    Jami ro'yxatdagi
-                </span>
+                <span class="stat-sub">{{ active_users }} faol, {{ inactive_users }} nofaol</span>
             </div>
         </div>
-        <a href="{% url 'user_management:user_list' %}" class="stat-link">
-            Ko'rish <i class="bi bi-arrow-right"></i>
-        </a>
+        <a href="{% url 'user_management:user_list' %}" class="stat-link">Ko'rish <i class="bi bi-arrow-right"></i></a>
     </div>
 
-    <!-- Guruhlar -->
     <div class="stat-card" data-color="orange">
         <div class="stat-card-inner">
-            <div class="stat-icon-wrap">
-                <div class="stat-icon">
-                    <i class="bi bi-collection-fill"></i>
-                </div>
-                <div class="stat-pulse"></div>
-            </div>
+            <div class="stat-icon-wrap"><div class="stat-icon"><i class="bi bi-collection-fill"></i></div></div>
             <div class="stat-body">
                 <span class="stat-label">Guruhlar</span>
                 <span class="stat-value" data-target="{{ group_count|default:0 }}">0</span>
-                <span class="stat-sub">
-                    <i class="bi bi-diagram-3"></i>
-                    Faol guruhlar
-                </span>
+                <span class="stat-sub">{{ assigned_student_count }} talaba biriktirilgan</span>
             </div>
         </div>
-        <a href="#" class="stat-link">
-            Ko'rish <i class="bi bi-arrow-right"></i>
-        </a>
+        <a href="{% url 'groups:group_list' %}" class="stat-link">Ko'rish <i class="bi bi-arrow-right"></i></a>
     </div>
 
-    <!-- Xonalar -->
     <div class="stat-card" data-color="purple">
         <div class="stat-card-inner">
-            <div class="stat-icon-wrap">
-                <div class="stat-icon">
-                    <i class="bi bi-door-open-fill"></i>
-                </div>
-                <div class="stat-pulse"></div>
-            </div>
+            <div class="stat-icon-wrap"><div class="stat-icon"><i class="bi bi-door-open-fill"></i></div></div>
             <div class="stat-body">
                 <span class="stat-label">Xonalar</span>
                 <span class="stat-value" data-target="{{ room_count|default:0 }}">0</span>
-                <span class="stat-sub">
-                    <i class="bi bi-buildings"></i>
-                    Nazorat ostida
-                </span>
+                <span class="stat-sub">{{ room_device_count }} xona qurilmaga bog'langan</span>
             </div>
         </div>
-        <a href="#" class="stat-link">
-            Ko'rish <i class="bi bi-arrow-right"></i>
-        </a>
+        <a href="{% url 'rooms:room_list' %}" class="stat-link">Ko'rish <i class="bi bi-arrow-right"></i></a>
     </div>
 
+    <div class="stat-card" data-color="cyan">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap"><div class="stat-icon"><i class="bi bi-journal-text"></i></div></div>
+            <div class="stat-body">
+                <span class="stat-label">Fanlar</span>
+                <span class="stat-value" data-target="{{ subject_count|default:0 }}">0</span>
+                <span class="stat-sub">{{ active_subject_count }} faol fan</span>
+            </div>
+        </div>
+        <a href="{% url 'subjects:subject_list' %}" class="stat-link">Ko'rish <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    <div class="stat-card" data-color="red">
+        <div class="stat-card-inner">
+            <div class="stat-icon-wrap"><div class="stat-icon"><i class="bi bi-calendar-week-fill"></i></div></div>
+            <div class="stat-body">
+                <span class="stat-label">Dars slotlari</span>
+                <span class="stat-value" data-target="{{ lesson_slot_count|default:0 }}">0</span>
+                <span class="stat-sub">{{ active_lesson_slot_count }} faol, {{ inactive_lesson_slot_count }} nofaol</span>
+            </div>
+        </div>
+        <a href="{% url 'schedule:lesson_slot_list' %}" class="stat-link">Ko'rish <i class="bi bi-arrow-right"></i></a>
+    </div>
 </section>
 
-<!-- ===== SECOND ROW ===== -->
-<section class="dashboard-row">
-
-    <!-- Bugungi davomat -->
-    <div class="dash-card dash-card-wide">
+<section class="insight-grid">
+    <div class="dash-card">
         <div class="dash-card-header">
-            <h3 class="dash-card-title">
-                <i class="bi bi-calendar2-check"></i>
-                Bugungi davomat
-            </h3>
-            <a href="#" class="dash-card-action">
-                Hammasi <i class="bi bi-arrow-right"></i>
-            </a>
+            <h3 class="dash-card-title"><i class="bi bi-person-lines-fill"></i> Foydalanuvchilar tarkibi</h3>
         </div>
         <div class="dash-card-body">
-            {% if today_attendance %}
-                <div class="attendance-table-wrap">
-                    <table class="attendance-table">
-                        <thead>
-                            <tr>
-                                <th>Ism</th>
-                                <th>Qurilma</th>
-                                <th>Vaqt</th>
-                                <th>Holat</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in today_attendance %}
-                            <tr>
-                                <td>
-                                    <div class="person-cell">
-                                        <div class="person-avatar">{{ record.user.get_full_name|first|upper }}</div>
-                                        <span>{{ record.user.get_full_name }}</span>
-                                    </div>
-                                </td>
-                                <td>{{ record.device.name }}</td>
-                                <td class="mono">{{ record.timestamp|time:"H:i:s" }}</td>
-                                <td>
-                                    <span class="badge badge-{{ record.status|lower }}">
-                                        {{ record.get_status_display }}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="metric-stack">
+                <div class="metric-line color-green"><span>Talabalar</span><strong>{{ student_count }}</strong></div>
+                <div class="metric-line color-blue"><span>O'qituvchilar</span><strong>{{ teacher_count }}</strong></div>
+                <div class="metric-line color-purple"><span>Xodimlar</span><strong>{{ staff_count }}</strong></div>
+                <div class="metric-line color-orange"><span>Guruhsiz talabalar</span><strong>{{ unassigned_student_count }}</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-hdd-network"></i> Qurilmalar tarkibi</h3>
+        </div>
+        <div class="dash-card-body">
+            <div class="metric-stack">
+                <div class="metric-line color-green"><span>Kirish qurilmalari</span><strong>{{ entry_devices }}</strong></div>
+                <div class="metric-line color-orange"><span>Chiqish qurilmalari</span><strong>{{ exit_devices }}</strong></div>
+                <div class="metric-line color-blue"><span>Xona qurilmalari</span><strong>{{ room_devices }}</strong></div>
+                <div class="metric-line color-red"><span>Qurilmasiz faol xonalar</span><strong>{{ rooms_without_device }}</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-link-45deg"></i> O'quv jarayoni</h3>
+        </div>
+        <div class="dash-card-body">
+            <div class="metric-stack">
+                <div class="metric-line color-purple"><span>Guruh fanlari</span><strong>{{ group_subject_count }}</strong></div>
+                <div class="metric-line color-green"><span>Faol biriktirishlar</span><strong>{{ active_group_subject_count }}</strong></div>
+                <div class="metric-line color-blue"><span>Faol guruhlar</span><strong>{{ active_group_count }}</strong></div>
+                <div class="metric-line color-red"><span>Nofaol guruhlar</span><strong>{{ inactive_group_count }}</strong></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-row dashboard-row-balanced">
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-bar-chart-fill"></i> Haftalik dars yuklamasi</h3>
+        </div>
+        <div class="dash-card-body">
+            {% if weekday_load_stats %}
+                <div class="bar-list">
+                    {% for item in weekday_load_stats %}
+                    <div class="bar-item">
+                        <span>{{ item.label }}</span>
+                        <div class="bar-track"><div class="bar-fill" style="width: calc({{ item.total }} * 12%);"></div></div>
+                        <strong>{{ item.total }}</strong>
+                    </div>
+                    {% endfor %}
                 </div>
             {% else %}
-                <div class="empty-state">
-                    <i class="bi bi-calendar-x"></i>
-                    <p>Bugun hali davomat yo'q</p>
-                </div>
+                <div class="empty-state"><i class="bi bi-calendar-x"></i><p>Dars slotlari hali yo'q</p></div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Qurilmalar holati -->
     <div class="dash-card">
         <div class="dash-card-header">
-            <h3 class="dash-card-title">
-                <i class="bi bi-hdd-network"></i>
-                Qurilmalar holati
-            </h3>
+            <h3 class="dash-card-title"><i class="bi bi-clock-history"></i> Paralar bo'yicha</h3>
+        </div>
+        <div class="dash-card-body">
+            {% if lesson_load_stats %}
+                <div class="bar-list compact">
+                    {% for item in lesson_load_stats %}
+                    <div class="bar-item">
+                        <span>{{ item.label }}</span>
+                        <div class="bar-track"><div class="bar-fill alt" style="width: calc({{ item.total }} * 12%);"></div></div>
+                        <strong>{{ item.total }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state"><i class="bi bi-clock"></i><p>Para statistikasi mavjud emas</p></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-row dashboard-row-balanced">
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-collection"></i> Eng katta guruhlar</h3>
+            <a href="{% url 'groups:group_list' %}" class="dash-card-action">Hammasi <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="dash-card-body">
+            {% if groups_summary %}
+                <div class="summary-list">
+                    {% for group in groups_summary %}
+                    <div class="summary-item">
+                        <div><strong>{{ group.group_name }}</strong><span>{{ group.group_id }}</span></div>
+                        <em>{{ group.students_count }} talaba</em>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state"><i class="bi bi-collection"></i><p>Guruhlar mavjud emas</p></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-camera-video"></i> Qurilmalar holati</h3>
+            <a href="{% url 'devices:device_list' %}" class="dash-card-action">Hammasi <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="dash-card-body">
             {% if devices %}
@@ -177,45 +223,83 @@
                             <div class="device-status-dot {{ device.is_active|yesno:'online,offline' }}"></div>
                             <div class="device-item-info">
                                 <span class="device-item-name">{{ device.name }}</span>
-                                <span class="device-item-ip mono">{{ device.ip_address }}</span>
+                                <span class="device-item-ip mono">{{ device.ip_address }}{% if device.room %} - {{ device.room.room_name }}{% endif %}</span>
                             </div>
                         </div>
                         <span class="device-item-badge {{ device.is_active|yesno:'badge-online,badge-offline' }}">
-                            {{ device.is_active|yesno:'Online,Offline' }}
+                            {{ device.is_active|yesno:'Faol,Nofaol' }}
                         </span>
                     </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="empty-state">
-                    <i class="bi bi-camera-video-off"></i>
-                    <p>Qurilmalar topilmadi</p>
+                <div class="empty-state"><i class="bi bi-camera-video-off"></i><p>Qurilmalar topilmadi</p></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-row dashboard-row-balanced">
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-link"></i> Oxirgi guruh-fan biriktirishlar</h3>
+            <a href="{% url 'schedule:group_subject_list' %}" class="dash-card-action">Hammasi <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="dash-card-body">
+            {% if recent_group_subjects %}
+                <div class="summary-list">
+                    {% for item in recent_group_subjects %}
+                    <div class="summary-item">
+                        <div><strong>{{ item.group.group_name }} - {{ item.subject.subject_name }}</strong><span>{{ item.teacher.get_full_name }}</span></div>
+                        <em class="{{ item.is_active|yesno:'text-ok,text-bad' }}">{{ item.is_active|yesno:'Faol,Nofaol' }}</em>
+                    </div>
+                    {% endfor %}
                 </div>
+            {% else %}
+                <div class="empty-state"><i class="bi bi-link-45deg"></i><p>Biriktirishlar mavjud emas</p></div>
             {% endif %}
         </div>
     </div>
 
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h3 class="dash-card-title"><i class="bi bi-calendar-week"></i> Yaqin dars slotlari</h3>
+            <a href="{% url 'schedule:lesson_slot_list' %}" class="dash-card-action">Hammasi <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="dash-card-body">
+            {% if recent_lesson_slots %}
+                <div class="summary-list">
+                    {% for slot in recent_lesson_slots %}
+                    <div class="summary-item">
+                        <div><strong>{{ slot.get_weekday_display }} {{ slot.lesson_number }}-para</strong><span>{{ slot.group_subject.group.group_name }} - {{ slot.room.room_name }}</span></div>
+                        <em>{{ slot.start_time|time:'H:i' }}-{{ slot.end_time|time:'H:i' }}</em>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state"><i class="bi bi-calendar-x"></i><p>Dars slotlari mavjud emas</p></div>
+            {% endif %}
+        </div>
+    </div>
 </section>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Stat raqamlarni animatsiya bilan ko'rsatish
 function animateCounter(el) {
     const target = parseInt(el.dataset.target) || 0;
     if (target === 0) { el.textContent = '0'; return; }
     let current = 0;
-    const step = Math.ceil(target / 40);
+    const step = Math.max(1, Math.ceil(target / 40));
     const timer = setInterval(() => {
         current = Math.min(current + step, target);
         el.textContent = current.toLocaleString();
         if (current >= target) clearInterval(timer);
-    }, 30);
+    }, 24);
 }
 
 document.querySelectorAll('.stat-value[data-target]').forEach(el => {
-    // IntersectionObserver bilan lazy animate
     const obs = new IntersectionObserver(entries => {
         entries.forEach(e => {
             if (e.isIntersecting) {

@@ -1,6 +1,9 @@
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+
+from attendance_system.spreadsheet import build_xlsx
 
 from .models import UserProfile
 
@@ -97,3 +100,35 @@ class UserManagementTests(TestCase):
         User.objects.create_user(username='plain-user')
 
         self.assertEqual(UserProfile.objects.count(), 0)
+
+    def test_download_student_template(self):
+        response = self.client.get(reverse('user_management:download_student_template'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+    def test_import_students_from_excel(self):
+        excel_bytes = build_xlsx(
+            ['Face ID', 'AIS ID', 'Familya', 'Ism', 'Holati'],
+            [['FACE-900', 'AIS-900', 'Testov', 'Talaba', 'Faol']],
+            sheet_name='Talabalar',
+        )
+        upload = SimpleUploadedFile(
+            'students.xlsx',
+            excel_bytes,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+        response = self.client.post(
+            reverse('user_management:import_students'),
+            {'file': upload},
+        )
+
+        self.assertRedirects(response, reverse('user_management:student_list'))
+        student = UserProfile.objects.get(face_id='FACE-900')
+        self.assertEqual(student.ais_id, 'AIS-900')
+        self.assertEqual(student.role, UserProfile.Role.STUDENT)
+        self.assertTrue(student.is_active)

@@ -60,6 +60,43 @@
     </form>
 </div>
 
+<div class="card import-card">
+    <div class="import-toolbar">
+        <div>
+            <div class="card-title import-card-title">
+                <div class="icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                Fanlarni Excel orqali import qilish
+            </div>
+            <p class="import-help">Shablondagi ustunlarni to'ldirib, bitta fayl bilan fanlarni yuklang.</p>
+        </div>
+        <button type="button" class="btn-secondary" onclick="toggleImportPanel('subjectsImportPanel')">
+            <i class="bi bi-upload"></i>
+            Import
+        </button>
+    </div>
+    <div class="import-panel" id="subjectsImportPanel">
+        <div class="import-actions">
+            <a href="{% url 'subjects:download_subject_template' %}" class="btn-secondary">
+                <i class="bi bi-file-earmark-excel"></i>
+                Excel shablon yuklab olish
+            </a>
+            <form method="post" action="{% url 'subjects:import_subjects' %}" enctype="multipart/form-data" class="import-form">
+                {% csrf_token %}
+                <label class="file-trigger">
+                    <i class="bi bi-paperclip"></i>
+                    <span>Fayl tanlash</span>
+                    <input type="file" name="file" accept=".xlsx" required onchange="updateSelectedFile(this)">
+                </label>
+                <span class="selected-file-name" data-file-label>Fayl tanlanmagan</span>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    Import qilish
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="table-header">
         <div>
@@ -351,5 +388,17 @@ document.getElementById('subjectsTable').addEventListener('click', function(even
 document.getElementById('editModal').addEventListener('click', function(event) {
     if (event.target === this) closeEditModal();
 });
+
+function toggleImportPanel(panelId) {
+    document.getElementById(panelId)?.classList.toggle('show');
+}
+
+function updateSelectedFile(input) {
+    const form = input.closest('form');
+    const label = form?.querySelector('[data-file-label]');
+    if (label) {
+        label.textContent = input.files && input.files[0] ? input.files[0].name : 'Fayl tanlanmagan';
+    }
+}
 </script>
 {% endblock %}

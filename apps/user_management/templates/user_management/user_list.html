@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Foydalanuvchilar{% endblock %}
-{% block page_title %}Foydalanuvchilar boshqaruvi{% endblock %}
-{% block nav_users %}active{% endblock %}
+{% block title %}
+{% if nav_section == 'students' %}Talabalar{% elif nav_section == 'teachers' %}O'qituvchilar{% elif nav_section == 'staff' %}Xodimlar{% else %}Foydalanuvchilar{% endif %}
+{% endblock %}
+{% block page_title %}{{ list_page_title }}{% endblock %}
+{% block nav_students %}{% if nav_section == 'students' %}active{% endif %}{% endblock %}
+{% block nav_teachers %}{% if nav_section == 'teachers' %}active{% endif %}{% endblock %}
+{% block nav_staff %}{% if nav_section == 'staff' %}active{% endif %}{% endblock %}
+{% block nav_users %}{% if nav_section == 'users' %}active{% endif %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'user_management/user_management.css' %}">
@@ -14,7 +19,7 @@
 <div class="card">
     <div class="card-title">
         <div class="icon"><i class="bi bi-person-plus"></i></div>
-        Yangi foydalanuvchi qo'shish
+        {% if role_scope == 'student' %}Yangi talaba qo'shish{% elif role_scope == 'teacher' %}Yangi o'qituvchi qo'shish{% elif role_scope == 'staff' %}Yangi xodim qo'shish{% else %}Yangi foydalanuvchi qo'shish{% endif %}
     </div>
 
     {% if error %}
@@ -58,6 +63,13 @@
 
             <div class="form-group">
                 <label>Lavozim</label>
+                {% if role_scope %}
+                <input type="hidden" name="role" value="{{ role_scope }}">
+                <div class="input-wrap" style="opacity:0.85;">
+                    <span class="input-icon"><i class="bi bi-person-badge"></i></span>
+                    <input type="text" value="{{ role_scope_label }}" readonly style="cursor:default;">
+                </div>
+                {% else %}
                 <div class="select-wrap">
                     <select name="role">
                         {% for value, label in role_choices %}
@@ -65,6 +77,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
             </div>
 
             <div class="form-group">
@@ -81,18 +94,58 @@
         <div class="form-footer">
             <button type="submit" class="btn-primary">
                 <i class="bi bi-plus-lg"></i>
-                Foydalanuvchi qo'shish
+                {% if role_scope == 'student' %}Talaba qo'shish{% elif role_scope == 'teacher' %}O'qituvchi qo'shish{% elif role_scope == 'staff' %}Xodim qo'shish{% else %}Foydalanuvchi qo'shish{% endif %}
             </button>
         </div>
     </form>
 </div>
 
+{% if role_scope == 'student' %}
+<div class="card import-card">
+    <div class="import-toolbar">
+        <div>
+            <div class="card-title import-card-title">
+                <div class="icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                Talabalarni Excel orqali import qilish
+            </div>
+            <p class="import-help">Shablonni yuklab olib, qatorlarni to'ldiring va Excel faylni yuklang.</p>
+        </div>
+        <button type="button" class="btn-secondary" onclick="toggleImportPanel('studentsImportPanel')">
+            <i class="bi bi-upload"></i>
+            Import
+        </button>
+    </div>
+
+    <div class="import-panel" id="studentsImportPanel">
+        <div class="import-actions">
+            <a href="{% url 'user_management:download_student_template' %}" class="btn-secondary">
+                <i class="bi bi-file-earmark-excel"></i>
+                Excel shablon yuklab olish
+            </a>
+            <form method="post" action="{% url 'user_management:import_students' %}" enctype="multipart/form-data" class="import-form">
+                {% csrf_token %}
+                <label class="file-trigger">
+                    <i class="bi bi-paperclip"></i>
+                    <span>Fayl tanlash</span>
+                    <input type="file" name="file" accept=".xlsx" required onchange="updateSelectedFile(this)">
+                </label>
+                <span class="selected-file-name" data-file-label>Fayl tanlanmagan</span>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    Import qilish
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card">
     <div class="table-header">
         <div>
-            <h2>Foydalanuvchilar ro'yxati</h2>
+            <h2>{% if role_scope == 'student' %}Talabalar{% elif role_scope == 'teacher' %}O'qituvchilar{% elif role_scope == 'staff' %}Xodimlar{% else %}Foydalanuvchilar{% endif %} ro'yxati</h2>
             <div class="table-meta">
-                Jami: <strong>{{ total_users }}</strong> ta foydalanuvchi
+                Jami: <strong>{{ total_users }}</strong> ta {% if role_scope == 'student' %}talaba{% elif role_scope == 'teacher' %}o'qituvchi{% elif role_scope == 'staff' %}xodim{% else %}foydalanuvchi{% endif %}
             </div>
         </div>
         <div class="table-filters">
@@ -100,10 +153,10 @@
                 <i class="bi bi-search search-icon"></i>
                 <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
             </div>
-            <select class="status-select" id="roleFilter" onchange="filterTable()">
+            <select class="status-select" id="roleFilter" onchange="filterTable()" {% if role_scope %}disabled title="Bu sahifada faqat bitta lavozim"{% endif %}>
                 <option value="">Barcha lavozimlar</option>
                 {% for value, label in role_choices %}
-                    <option value="{{ value }}">{{ label }}</option>
+                    <option value="{{ value }}" {% if role_scope == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
             <select class="status-select" id="statusFilter" onchange="filterTable()">
@@ -424,5 +477,17 @@ function getCSRFToken() {
 document.getElementById('editModal').addEventListener('click', function(event) {
     if (event.target === this) closeEditModal();
 });
+
+function toggleImportPanel(panelId) {
+    document.getElementById(panelId)?.classList.toggle('show');
+}
+
+function updateSelectedFile(input) {
+    const form = input.closest('form');
+    const label = form?.querySelector('[data-file-label]');
+    if (label) {
+        label.textContent = input.files && input.files[0] ? input.files[0].name : 'Fayl tanlanmagan';
+    }
+}
 </script>
 {% endblock %}

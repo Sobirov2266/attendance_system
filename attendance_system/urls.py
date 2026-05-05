@@ -19,4 +19,5 @@ urlpatterns = [
     path('groups/',  include('apps.groups.urls')),
     path('subjects/', include('apps.subjects.urls')),
     path('rooms/', include('apps.rooms.urls')),
+    path('schedule/', include('apps.schedule.urls')),
 ]

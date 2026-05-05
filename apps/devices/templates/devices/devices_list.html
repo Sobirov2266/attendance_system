@@ -83,12 +83,29 @@
             <div class="form-group">
                 <label>Qurilma turi</label>
                 <div class="select-wrap">
-                    <select name="device_type">
+                    <select name="device_type" id="deviceTypeSelect" onchange="toggleRoomField()">
                         <option value="entry">Kirish</option>
                         <option value="exit">Chiqish</option>
                         <option value="room">Xona</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-group" id="roomFieldGroup" style="display: none;">
+                <label>Xona (1 xonada 1 qurilma)</label>
+                <div class="select-wrap">
+                    <select name="room" id="roomSelect">
+                        <option value="">— Tanlang —</option>
+                        {% for r in available_rooms %}
+                        <option value="{{ r.pk }}">{{ r.room_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if not available_rooms %}
+                <p class="hint-text" id="noRoomsHint" style="display: none; margin-top: 0.5rem; font-size: 0.875rem; opacity: 0.8;">
+                    Bo‘sh xona yo‘q yoki barcha xonalarda qurilma bor.
+                </p>
+                {% endif %}
             </div>
         </div>
 
@@ -130,6 +147,7 @@
                 <th>Qurilma nomi</th>
                 <th>IP Manzil</th>
                 <th>Turi</th>
+                <th>Xona</th>
                 <th>Holati</th>
                 <th>Amallar</th>
             </tr>
@@ -142,6 +160,7 @@
                 <td>
                     <span class="badge-type">{{ d.get_device_type_display }}</span>
                 </td>
+                <td>{% if d.room %}{{ d.room.room_name }}{% else %}—{% endif %}</td>
                 <td>
                     <button
                         class="status-btn {% if d.is_active %}active{% else %}inactive{% endif %}"
@@ -156,7 +175,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="empty-row">
+                <td colspan="6" class="empty-row">
                     Hech qanday qurilma topilmadi. Yuqorida yangi qurilma qo'shing.
                 </td>
             </tr>
@@ -169,6 +188,23 @@
 
 {% block extra_js %}
 <script>
+function toggleRoomField() {
+    const sel = document.getElementById('deviceTypeSelect');
+    const grp = document.getElementById('roomFieldGroup');
+    const roomSelect = document.getElementById('roomSelect');
+    if (!sel || !grp) return;
+    const isRoom = sel.value === 'room';
+    grp.style.display = isRoom ? '' : 'none';
+    if (roomSelect) {
+        roomSelect.required = isRoom;
+        if (!isRoom) roomSelect.value = '';
+    }
+    const hint = document.getElementById('noRoomsHint');
+    if (hint && isRoom) hint.style.display = '';
+    else if (hint) hint.style.display = 'none';
+}
+document.addEventListener('DOMContentLoaded', toggleRoomField);
+
 function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const status = document.getElementById('statusFilter').value;

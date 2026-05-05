@@ -51,11 +51,28 @@
             <span class="nav-badge" id="badge-devices"></span>
         </a>
 
-        <a href="{% url 'user_management:user_list' %}" class="nav-item {% block nav_users %}{% endblock %}">
+        <a href="{% url 'user_management:user_list' %}" class="nav-item user-menu-parent {% block nav_users %}{% endblock %}" id="userMenuParent">
             <span class="nav-icon"><i class="bi bi-people"></i></span>
-            <span class="nav-label">Foydalanuvchilar</span>
+            <span class="nav-label">Barcha foydalanuvchilar</span>
             <span class="nav-badge" id="badge-users"></span>
         </a>
+
+        <div class="nav-submenu" id="userSubmenu">
+            <a href="{% url 'user_management:student_list' %}" class="nav-item nav-subitem {% block nav_students %}{% endblock %}">
+                <span class="nav-icon"><i class="bi bi-mortarboard"></i></span>
+                <span class="nav-label">Talabalar</span>
+            </a>
+
+            <a href="{% url 'user_management:teacher_list' %}" class="nav-item nav-subitem {% block nav_teachers %}{% endblock %}">
+                <span class="nav-icon"><i class="bi bi-easel"></i></span>
+                <span class="nav-label">O'qituvchilar</span>
+            </a>
+
+            <a href="{% url 'user_management:staff_list' %}" class="nav-item nav-subitem {% block nav_staff %}{% endblock %}">
+                <span class="nav-icon"><i class="bi bi-person-workspace"></i></span>
+                <span class="nav-label">Xodimlar</span>
+            </a>
+        </div>
 
         <a href="{% url 'groups:group_list' %}" class="nav-item {% block nav_groups %}{% endblock %}">
             <span class="nav-icon"><i class="bi bi-collection"></i></span>
@@ -70,6 +87,18 @@
         <a href="{% url 'rooms:room_list' %}" class="nav-item {% block nav_rooms %}{% endblock %}">
             <span class="nav-icon"><i class="bi bi-door-open"></i></span>
             <span class="nav-label">Xonalar</span>
+        </a>
+
+        <div class="nav-section-label">Jadval</div>
+
+        <a href="{% url 'schedule:group_subject_list' %}" class="nav-item {% block nav_schedule_groups %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-link-45deg"></i></span>
+            <span class="nav-label">Guruh fanlari</span>
+        </a>
+
+        <a href="{% url 'schedule:lesson_slot_list' %}" class="nav-item {% block nav_schedule_slots %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-calendar-week"></i></span>
+            <span class="nav-label">Dars jadvallari</span>
         </a>
 
         <div class="nav-section-label">Hisobot</div>
@@ -172,6 +201,14 @@
             item.classList.add('active');
         }
     });
+
+    const userSubmenu = document.getElementById('userSubmenu');
+    const userMenuParent = document.getElementById('userMenuParent');
+    const isUsersSection = currentPath === '/users/' || currentPath.startsWith('/users/');
+    if (isUsersSection) {
+        userSubmenu?.classList.add('show');
+        userMenuParent?.classList.add('submenu-open');
+    }
 </script>
 
 {% block extra_js %}{% endblock %}

@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
+from attendance_system.spreadsheet import build_xlsx
 from apps.user_management.models import UserProfile
 
 from .models import Group, GroupStudent
@@ -158,3 +160,22 @@ class GroupTests(TestCase):
 
         self.assertRedirects(response, reverse('groups:group_students', args=[group.id]))
         self.assertTrue(membership.is_active)
+
+    def test_import_groups_from_excel(self):
+        excel_bytes = build_xlsx(
+            ['Group ID', 'Guruh nomi', 'Holati'],
+            [['CS-777', 'Computer Science 777', 'Faol']],
+            sheet_name='Guruhlar',
+        )
+        upload = SimpleUploadedFile(
+            'groups.xlsx',
+            excel_bytes,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+        response = self.client.post(reverse('groups:import_groups'), {'file': upload})
+
+        self.assertRedirects(response, reverse('groups:group_list'))
+        group = Group.objects.get(group_id='CS-777')
+        self.assertEqual(group.group_name, 'Computer Science 777')
+        self.assertTrue(group.is_active)

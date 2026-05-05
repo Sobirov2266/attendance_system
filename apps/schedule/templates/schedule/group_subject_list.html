@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Guruh fanlari{% endblock %}
+{% block page_title %}Guruh fanlari{% endblock %}
+{% block nav_schedule_groups %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'user_management/user_management.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-link-45deg"></i></div>
+        Guruhga fan va o'qituvchi biriktirish
+    </div>
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Guruh</label>
+                <div class="select-wrap">
+                    <select name="group" required>
+                        <option value="">— Tanlang —</option>
+                        {% for g in groups %}
+                        <option value="{{ g.pk }}">{{ g.group_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Fan</label>
+                <div class="select-wrap">
+                    <select name="subject" required>
+                        <option value="">— Tanlang —</option>
+                        {% for s in subjects %}
+                        <option value="{{ s.pk }}">{{ s.subject_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>O'qituvchi</label>
+                <div class="select-wrap">
+                    <select name="teacher" required>
+                        <option value="">— Tanlang —</option>
+                        {% for t in teachers %}
+                        <option value="{{ t.pk }}">{{ t.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Holati</label>
+                <div class="select-wrap">
+                    <select name="is_active">
+                        <option value="active">Faol</option>
+                        <option value="inactive">Nofaol</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                Saqlash
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-header">
+        <div>
+            <h2>Biriktirishlar ro'yxati</h2>
+            <div class="table-meta">Jami: <strong>{{ total_count }}</strong></div>
+        </div>
+        <div class="table-filters">
+            <div class="search-wrap">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Qidirish..." oninput="filterTable()">
+            </div>
+            <select class="status-select" id="statusFilter" onchange="filterTable()">
+                <option value="">Barcha holat</option>
+                <option value="active">Faol</option>
+                <option value="inactive">Nofaol</option>
+            </select>
+        </div>
+    </div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Guruh</th>
+                <th>Fan</th>
+                <th>O'qituvchi</th>
+                <th>Holati</th>
+                <th>Qo'shilgan</th>
+                <th>Amallar</th>
+            </tr>
+            <tr class="column-filter-row">
+                <th><input type="text" class="column-filter" data-column="0" placeholder="#"></th>
+                <th><input type="text" class="column-filter" data-column="1" placeholder="Guruh"></th>
+                <th><input type="text" class="column-filter" data-column="2" placeholder="Fan"></th>
+                <th><input type="text" class="column-filter" data-column="3" placeholder="O'qituvchi"></th>
+                <th>
+                    <select class="column-filter" data-column="status">
+                        <option value="">Barchasi</option>
+                        <option value="active">Faol</option>
+                        <option value="inactive">Nofaol</option>
+                    </select>
+                </th>
+                <th><input type="text" class="column-filter" data-column="5" placeholder="dd.mm.yyyy"></th>
+                <th><button type="button" class="clear-column-filters" onclick="clearColumnFilters()">Tozalash</button></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gs in group_subjects %}
+            <tr
+                data-pk="{{ gs.id }}"
+                data-group-id="{{ gs.group_id }}"
+                data-subject-id="{{ gs.subject_id }}"
+                data-teacher-id="{{ gs.teacher_id }}"
+                data-status="{% if gs.is_active %}active{% else %}inactive{% endif %}"
+            >
+                <td class="row-num">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                <td class="name">{{ gs.group.group_name }}</td>
+                <td>{{ gs.subject.subject_name }}</td>
+                <td>{{ gs.teacher.get_full_name }}</td>
+                <td>
+                    <button type="button" class="status-btn {% if gs.is_active %}active{% else %}inactive{% endif %}" data-action="toggle">
+                        {% if gs.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </button>
+                </td>
+                <td class="date-cell">{{ gs.created_at|date:"d.m.Y" }}</td>
+                <td class="actions-cell">
+                    <button type="button" class="edit-btn" data-action="edit" title="Tahrirlash"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="delete-btn" data-action="delete" title="O'chirish"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-row">Hozircha biriktirish yo'q. Yuqoridan qo'shing.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-wrap">
+        <div class="pagination-info">{{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ total_count }}</div>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-link"><i class="bi bi-chevron-left"></i></a>
+            {% else %}<span class="page-link disabled"><i class="bi bi-chevron-left"></i></span>{% endif %}
+            {% for page_num in paginator.page_range %}
+                {% if page_num == page_obj.number %}
+                <span class="page-link active">{{ page_num }}</span>
+                {% elif page_num >= page_obj.number|add:"-2" and page_num <= page_obj.number|add:"2" %}
+                <a href="?page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-link"><i class="bi bi-chevron-right"></i></a>
+            {% else %}<span class="page-link disabled"><i class="bi bi-chevron-right"></i></span>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal-backdrop" id="editModal" aria-hidden="true">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Biriktirishni tahrirlash</h3>
+            <button type="button" class="modal-close" onclick="closeEditModal()" title="Yopish"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="alert alert-error modal-error" id="editError"></div>
+        <form id="editForm">
+            {% csrf_token %}
+            <input type="hidden" name="pk" id="editPk">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Guruh</label>
+                    <div class="select-wrap">
+                        <select name="group" id="editGroup" required>
+                            {% for g in groups %}<option value="{{ g.pk }}">{{ g.group_name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Fan</label>
+                    <div class="select-wrap">
+                        <select name="subject" id="editSubject" required>
+                            {% for s in subjects %}<option value="{{ s.pk }}">{{ s.subject_name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>O'qituvchi</label>
+                    <div class="select-wrap">
+                        <select name="teacher" id="editTeacher" required>
+                            {% for t in teachers %}<option value="{{ t.pk }}">{{ t.get_full_name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Holati</label>
+                    <div class="select-wrap">
+                        <select name="is_active" id="editStatus">
+                            <option value="active">Faol</option>
+                            <option value="inactive">Nofaol</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="form-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Bekor qilish</button>
+                <button type="submit" class="btn-primary"><i class="bi bi-check2"></i> Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const st = document.getElementById('statusFilter').value;
+    const filters = Array.from(document.querySelectorAll('.column-filter')).map(filter => ({
+        column: filter.dataset.column,
+        value: filter.value.toLowerCase(),
+    }));
+
+    document.querySelectorAll('#dataTable tbody tr[data-pk]').forEach(row => {
+        const okQ = row.textContent.toLowerCase().includes(q);
+        const okS = !st || row.dataset.status === st;
+        const okColumns = filters.every(filter => {
+            if (!filter.value) return true;
+            if (filter.column === 'status') return row.dataset.status === filter.value;
+            return row.cells[Number(filter.column)].textContent.toLowerCase().includes(filter.value);
+        });
+        row.style.display = (okQ && okS && okColumns) ? '' : 'none';
+    });
+}
+
+function clearColumnFilters() {
+    document.querySelectorAll('.column-filter').forEach(filter => { filter.value = ''; });
+    filterTable();
+}
+
+document.querySelectorAll('.column-filter').forEach(filter => {
+    filter.addEventListener('input', filterTable);
+    filter.addEventListener('change', filterTable);
+});
+
+function getCSRF() {
+    return document.cookie.split('; ').find(r => r.startsWith('csrftoken'))?.split('=')[1];
+}
+
+function setStatusBtn(btn, on) {
+    btn.textContent = on ? 'Faol' : 'Nofaol';
+    btn.classList.toggle('active', on);
+    btn.classList.toggle('inactive', !on);
+}
+
+function openEdit(row) {
+    document.getElementById('editPk').value = row.dataset.pk;
+    document.getElementById('editGroup').value = row.dataset.groupId;
+    document.getElementById('editSubject').value = row.dataset.subjectId;
+    document.getElementById('editTeacher').value = row.dataset.teacherId;
+    document.getElementById('editStatus').value = row.dataset.status;
+    document.getElementById('editError').style.display = 'none';
+    const m = document.getElementById('editModal');
+    m.classList.add('show');
+    m.setAttribute('aria-hidden', 'false');
+}
+
+function closeEditModal() {
+    const m = document.getElementById('editModal');
+    m.classList.remove('show');
+    m.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const pk = document.getElementById('editPk').value;
+    fetch(`/schedule/group-subjects/${pk}/update/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF() },
+        body: new FormData(this),
+    })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+        if (!ok || !d.success) {
+            const el = document.getElementById('editError');
+            el.textContent = d.error || 'Xatolik';
+            el.style.display = 'block';
+            return;
+        }
+        const row = document.querySelector(`#dataTable tr[data-pk='${d.item.id}']`);
+        if (row) {
+            row.dataset.groupId = d.item.group_id;
+            row.dataset.subjectId = d.item.subject_id;
+            row.dataset.teacherId = d.item.teacher_id;
+            row.dataset.status = d.item.is_active ? 'active' : 'inactive';
+            row.cells[1].textContent = d.item.group_name;
+            row.cells[2].textContent = d.item.subject_name;
+            row.cells[3].textContent = d.item.teacher_name;
+            setStatusBtn(row.querySelector('[data-action=toggle]'), d.item.is_active);
+        }
+        closeEditModal();
+        filterTable();
+    });
+});
+
+document.getElementById('dataTable').addEventListener('click', function(e) {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const row = btn.closest('tr[data-pk]');
+    if (!row) return;
+    const pk = row.dataset.pk;
+    if (btn.dataset.action === 'toggle') {
+        fetch(`/schedule/group-subjects/${pk}/toggle/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF() },
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                row.dataset.status = d.is_active ? 'active' : 'inactive';
+                setStatusBtn(btn, d.is_active);
+                filterTable();
+            }
+        });
+    } else if (btn.dataset.action === 'edit') {
+        openEdit(row);
+    } else if (btn.dataset.action === 'delete') {
+        if (!confirm("O'chirishni tasdiqlaysizmi?")) return;
+        fetch(`/schedule/group-subjects/${pk}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRF() },
+        })
+        .then(r => r.json())
+        .then(d => { if (d.success) row.remove(); });
+    }
+});
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+</script>
+{% endblock %}
