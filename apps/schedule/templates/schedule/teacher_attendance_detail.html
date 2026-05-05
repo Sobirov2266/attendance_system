@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher panel - Guruh davomati{% endblock %}
+{% block page_title %}Teacher panel: Guruh davomati{% endblock %}
+{% block nav_attendance %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="table-header">
+        <div>
+            <h2>{{ group_subject.group.group_name }} — {{ group_subject.subject.subject_name }}</h2>
+            <div class="table-meta">Sana: <strong>{{ selected_date }}</strong></div>
+        </div>
+        <div>
+            <a href="{% url 'schedule:teacher_attendance' %}?date={{ selected_date }}" class="btn-secondary">Ortga</a>
+        </div>
+    </div>
+
+    <form method="get" style="margin-bottom: 1rem;">
+        <input type="date" name="date" value="{{ selected_date }}">
+        <button type="submit" class="btn-primary">Filtrlash</button>
+    </form>
+
+    {% if not has_lesson_slots %}
+    <div class="alert alert-error">Bu guruh uchun tanlangan kunda dars sloti yo'q.</div>
+    {% elif not has_any_room_device %}
+    <div class="alert alert-error">Xonaga device biriktirilmagan. Device biriktirilgach dars davomati aktiv bo'ladi.</div>
+    {% endif %}
+
+    {% if lesson_slot_cards %}
+    <table style="margin-bottom: 1rem;">
+        <thead>
+            <tr>
+                <th>Para</th>
+                <th>Xona</th>
+                <th>Holat</th>
+                <th>Darsga kelganlar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for slot in lesson_slot_cards %}
+            <tr>
+                <td>{{ slot.label }}</td>
+                <td>{{ slot.room_name }}</td>
+                <td>
+                    {% if slot.has_room_device %}
+                        Active ({{ slot.device_name }})
+                    {% else %}
+                        Xonaga device biriktirilmagan
+                    {% endif %}
+                </td>
+                <td>
+                    {% if slot.has_room_device %}
+                        {{ slot.present_count }} ta
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Talaba</th>
+                <th>Universitetga kelgan</th>
+                <th>Dars davomati</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in student_rows %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ row.student.get_full_name }}</td>
+                <td>{% if row.university_present %}Keldi{% else %}Kelmagan{% endif %}</td>
+                <td>{{ row.lesson_status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="empty-row">Guruhda aktiv talaba topilmadi.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

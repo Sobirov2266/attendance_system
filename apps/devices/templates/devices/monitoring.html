@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Monitoring{% endblock %}
+{% block page_title %}Turniket user rollari{% endblock %}
+{% block nav_monitoring %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.monitoring-container { display: flex; flex-direction: column; gap: 1rem; }
+.monitoring-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.filter-bar {
+    background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
+}
+.date-buttons, .role-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.date-btn, .role-btn, .page-link {
+    display: inline-block; padding: 0.4rem 0.7rem; border: 1px solid #dee2e6; border-radius: 6px;
+    background: white; color: #495057; text-decoration: none; font-size: 0.82rem;
+}
+.date-btn.active, .role-btn.active, .page-link.active { background: #007bff; color: white; border-color: #007bff; }
+.filter-input, .filter-select {
+    min-width: 170px; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 6px; background: white; font-size: 0.9rem;
+}
+.btn { padding: 0.5rem 0.9rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-decoration: none; }
+.btn-primary { background: #007bff; color: white; }
+.btn-light { background: #e9ecef; color: #212529; }
+.users-table { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+.users-table table { width: 100%; border-collapse: collapse; }
+.users-table th, .users-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e9ecef; vertical-align: middle; }
+.users-table th { background: #f8f9fa; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; color: #495057; }
+.user-id { font-family: monospace; background: #e9ecef; padding: 0.12rem 0.35rem; border-radius: 4px; font-size: 0.8rem; }
+.timestamp { font-family: monospace; font-size: 0.88rem; white-space: nowrap; }
+.role-badge { display: inline-block; padding: 0.22rem 0.7rem; border-radius: 12px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; }
+.role-student { background: #dbeafe; color: #1d4ed8; }
+.role-teacher { background: #ede9fe; color: #6d28d9; }
+.role-staff { background: #dcfce7; color: #166534; }
+.pagination-bar { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.pagination { display: flex; gap: 0.4rem; align-items: center; }
+.inline-form { display: flex; gap: 0.5rem; align-items: center; }
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="monitoring-container">
+    <div class="monitoring-header">
+        <h2>Turniket xotirasidagi userlar (unikal)</h2>
+        <span>Jami: <strong>{{ total_count }}</strong> ta</span>
+    </div>
+
+    <div class="date-buttons">
+        {% for d in last_10_days %}
+            <a href="?date={{ d }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+               class="date-btn {% if d == selected_date %}active{% endif %}">
+                {{ d }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="role-buttons">
+        <a href="?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}&role=all"
+           class="role-btn {% if role_filter == 'all' %}active{% endif %}">Barchasi</a>
+        <a href="?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}&role=staff"
+           class="role-btn {% if role_filter == 'staff' %}active{% endif %}">Xodim</a>
+        <a href="?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}&role=teacher"
+           class="role-btn {% if role_filter == 'teacher' %}active{% endif %}">O'qituvchi</a>
+        <a href="?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}&role=student"
+           class="role-btn {% if role_filter == 'student' %}active{% endif %}">Talaba</a>
+    </div>
+
+    <form class="filter-bar" method="get">
+        <input type="date" name="date" class="filter-input" value="{{ selected_date }}">
+        <input type="text" name="q" class="filter-input" value="{{ q }}" placeholder="ID yoki ism/familiya">
+        <select name="device" class="filter-select">
+            <option value="">Barcha qurilmalar</option>
+            {% for device in devices %}
+                <option value="{{ device.id }}" {% if selected_device == device.id|stringformat:"s" %}selected{% endif %}>{{ device.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="role" class="filter-select">
+            <option value="all" {% if role_filter == 'all' %}selected{% endif %}>Barcha rollar</option>
+            <option value="staff" {% if role_filter == 'staff' %}selected{% endif %}>Xodim</option>
+            <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>O'qituvchi</option>
+            <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Talaba</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Qidirish</button>
+        <a
+            href="{% url 'devices:monitoring_export_pdf' %}?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+            class="btn btn-primary"
+        >
+            PDF Export
+        </a>
+        <a href="?date={{ selected_date }}" class="btn btn-light">Tozalash</a>
+    </form>
+
+    <div class="users-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ism/Familya</th>
+                    <th>Role</th>
+                    <th>Oxirgi o'tish</th>
+                    <th>O'tishlar soni</th>
+                    <th>Amal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td><span class="user-id">{{ user.user_id }}</span></td>
+                        <td>{{ user.full_name }}</td>
+                        <td>
+                            <span class="role-badge role-{{ user.role }}">
+                                {{ user.role_display }}
+                            </span>
+                        </td>
+                        <td class="timestamp">{{ user.last_seen|timezone:"Asia/Tashkent"|date:"d.m.Y H:i:s" }}</td>
+                        <td>{{ user.pass_count }}</td>
+                        <td>
+                            <form method="post" class="inline-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="set_role">
+                                <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                                <input type="hidden" name="full_name" value="{{ user.full_name }}">
+                                <select name="role" class="filter-select" style="min-width: 130px;">
+                                    {% for value, label in role_choices %}
+                                        <option value="{{ value }}" {% if user.role == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-primary">Saqlash</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-state">Tanlangan filtrlar bo'yicha user topilmadi</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-bar">
+        <span>Sahifa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a class="page-link" href="?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}&page={{ page_obj.previous_page_number }}">Oldingi</a>
+            {% endif %}
+            <span class="page-link active">{{ page_obj.number }}</span>
+            {% if page_obj.has_next %}
+                <a class="page-link" href="?date={{ selected_date }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_device %}&device={{ selected_device }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}&page={{ page_obj.next_page_number }}">Keyingi</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+setTimeout(() => {
+    window.location.reload();
+}, {{ refresh_seconds|default:30 }} * 1000);
+</script>
+{% endblock %}

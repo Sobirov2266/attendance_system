@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Teacher panel{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon"><i class="bi bi-mortarboard"></i></div>
+        <div class="logo-text">
+            <span class="logo-title">Teacher</span>
+            <span class="logo-sub">Panel</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{% url 'schedule:teacher_dashboard' %}" class="nav-item {% block nav_teacher_dashboard %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-grid-1x2"></i></span>
+            <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="{% url 'schedule:teacher_attendance' %}" class="nav-item {% block nav_teacher_attendance %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-calendar2-check"></i></span>
+            <span class="nav-label">Davomat</span>
+        </a>
+        <a href="{% url 'schedule:teacher_schedule' %}" class="nav-item {% block nav_teacher_schedule %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-calendar-week"></i></span>
+            <span class="nav-label">Dars jadvali</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
+            <div class="user-info">
+                <span class="user-name">{{ teacher_profile.get_full_name|default:request.user.username }}</span>
+                <span class="user-role">Teacher</span>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn" title="Chiqish">
+            <i class="bi bi-box-arrow-right"></i>
+        </a>
+    </div>
+</aside>
+
+<div class="main-wrapper">
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="sidebar-toggle" id="sidebarToggle" title="Sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="page-breadcrumb">
+                <span class="breadcrumb-page">{% block page_title %}Teacher panel{% endblock %}</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible">
+                <i class="bi bi-info-circle"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script>
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+const mainWrapper = document.querySelector('.main-wrapper');
+
+sidebarToggle?.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    mainWrapper.classList.toggle('sidebar-collapsed');
+});
+</script>
+</body>
+</html>

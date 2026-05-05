@@ -94,6 +94,63 @@ class UserManagementTests(TestCase):
         self.assertTrue(toggle_response.json()['is_active'])
         self.assertTrue(profile.is_active)
 
+    def test_update_teacher_can_attach_login_credentials(self):
+        teacher = self.create_profile(
+            10,
+            role=UserProfile.Role.TEACHER,
+            face_id='FACE-T-10',
+            ais_id='AIS-T-10',
+        )
+
+        response = self.client.post(reverse('user_management:update_user', args=[teacher.id]), {
+            'last_name': teacher.last_name,
+            'first_name': teacher.first_name,
+            'face_id': teacher.face_id,
+            'ais_id': teacher.ais_id,
+            'role': UserProfile.Role.TEACHER,
+            'is_active': 'active',
+            'login_username': 'teacher10',
+            'login_password': 'pass12345',
+        })
+        teacher.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(teacher.auth_user_id)
+        self.assertEqual(teacher.auth_user.username, 'teacher10')
+        self.assertTrue(teacher.auth_user.check_password('pass12345'))
+        self.assertEqual(response.json()['user']['login_username'], 'teacher10')
+
+    def test_update_teacher_rejects_duplicate_login_username(self):
+        existing_auth = User.objects.create_user(username='teacher-dup', password='pass12345')
+        teacher = self.create_profile(
+            11,
+            role=UserProfile.Role.TEACHER,
+            face_id='FACE-T-11',
+            ais_id='AIS-T-11',
+        )
+        teacher.auth_user = existing_auth
+        teacher.save(update_fields=['auth_user'])
+        another_teacher = self.create_profile(
+            12,
+            role=UserProfile.Role.TEACHER,
+            face_id='FACE-T-12',
+            ais_id='AIS-T-12',
+        )
+
+        response = self.client.post(reverse('user_management:update_user', args=[another_teacher.id]), {
+            'last_name': another_teacher.last_name,
+            'first_name': another_teacher.first_name,
+            'face_id': another_teacher.face_id,
+            'ais_id': another_teacher.ais_id,
+            'role': UserProfile.Role.TEACHER,
+            'is_active': 'active',
+            'login_username': 'teacher-dup',
+            'login_password': 'pass12345',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'Bu login allaqachon band.')
+
     def test_importing_legacy_signals_does_not_create_profile_for_auth_user(self):
         import apps.user_management.signals  # noqa: F401
 

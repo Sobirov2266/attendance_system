@@ -36,3 +36,19 @@ class DashboardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['group_count'], 2)
+
+    def test_dashboard_redirects_linked_teacher_to_teacher_panel(self):
+        teacher_auth = User.objects.create_user(username='teacher-login', password='pass12345')
+        UserProfile.objects.create(
+            last_name='Teacher',
+            first_name='Panel',
+            face_id='FACE-TEACHER-1',
+            ais_id='AIS-TEACHER-1',
+            role=UserProfile.Role.TEACHER,
+            auth_user=teacher_auth,
+        )
+        self.client.login(username='teacher-login', password='pass12345')
+
+        response = self.client.get(reverse('core:dashboard'))
+
+        self.assertRedirects(response, reverse('schedule:teacher_attendance'))

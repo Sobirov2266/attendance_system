@@ -117,6 +117,7 @@
                 <th>Kun</th>
                 <th>Vaqt</th>
                 <th>Guruh fani</th>
+                <th>O'qituvchi</th>
                 <th>Xona</th>
                 <th>Holati</th>
                 <th>Amallar</th>
@@ -140,7 +141,8 @@
                     </select>
                 </th>
                 <th><input type="text" class="column-filter" data-column="3" placeholder="Guruh yoki fan"></th>
-                <th><input type="text" class="column-filter" data-column="4" placeholder="Xona"></th>
+                <th><input type="text" class="column-filter" data-column="4" placeholder="O'qituvchi"></th>
+                <th><input type="text" class="column-filter" data-column="5" placeholder="Xona"></th>
                 <th>
                     <select class="column-filter" data-column="status">
                         <option value="">Barchasi</option>
@@ -167,6 +169,7 @@
                 <td>{{ slot.get_weekday_display }}</td>
                 <td class="mono">{{ slot.lesson_number }}-para: {{ slot.start_time|time:'H:i' }} - {{ slot.end_time|time:'H:i' }}</td>
                 <td class="name">{{ slot.group_subject.group.group_name }} - {{ slot.group_subject.subject.subject_name }}</td>
+                <td>{{ slot.group_subject.teacher.get_full_name }}</td>
                 <td>{{ slot.room.room_name }}</td>
                 <td>
                     <button type="button" class="status-btn {% if slot.is_active %}active{% else %}inactive{% endif %}" data-action="toggle">
@@ -179,7 +182,7 @@
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="7" class="empty-row">Slotlar yo'q.</td></tr>
+            <tr><td colspan="8" class="empty-row">Slotlar yo'q.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -368,7 +371,8 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
             row.cells[1].textContent = d.item.weekday_display;
             row.cells[2].textContent = `${d.item.lesson_number}-para: ${d.item.start_time} - ${d.item.end_time}`;
             row.cells[3].textContent = d.item.group_subject_label;
-            row.cells[4].textContent = d.item.room_name;
+            row.cells[4].textContent = d.item.teacher_name;
+            row.cells[5].textContent = d.item.room_name;
             setStatusBtn(row.querySelector('[data-action=toggle]'), d.item.is_active);
         }
         closeEditModal();

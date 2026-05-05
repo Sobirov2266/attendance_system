@@ -103,6 +103,11 @@
 
         <div class="nav-section-label">Hisobot</div>
 
+        <a href="{% url 'devices:monitoring' %}" class="nav-item {% block nav_monitoring %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-activity"></i></span>
+            <span class="nav-label">Monitoring</span>
+        </a>
+
         <a href="#" class="nav-item {% block nav_attendance %}{% endblock %}">
             <span class="nav-icon"><i class="bi bi-calendar2-check"></i></span>
             <span class="nav-label">Davomat</span>

@@ -1,7 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.rooms.models import Room
+from apps.user_management.models import UserProfile
 
 from .services.encryption import encrypt_password, decrypt_password
 
@@ -55,3 +57,48 @@ class Device(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.ip_address})"
+
+
+class DeviceLog(models.Model):
+    """Turniketdan o'tish logi: qaysi foydalanuvchi, qaysi qurilma, qachon."""
+
+    DIRECTIONS = [
+        ('in', 'KIRDI'),
+        ('out', 'CHIQDI'),
+    ]
+
+    user = models.ForeignKey(
+        UserProfile,
+        on_delete=models.CASCADE,
+        related_name='device_logs',
+        verbose_name='Foydalanuvchi',
+    )
+    device = models.ForeignKey(
+        Device,
+        on_delete=models.CASCADE,
+        related_name='logs',
+        verbose_name='Qurilma',
+    )
+    direction = models.CharField(
+        max_length=3,
+        choices=DIRECTIONS,
+        verbose_name='Yo\'nalish',
+    )
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        verbose_name='Vaqt',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Qurilma logi'
+        verbose_name_plural = 'Qurilma loglari'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['-timestamp']),
+            models.Index(fields=['user', '-timestamp']),
+            models.Index(fields=['device', '-timestamp']),
+        ]
+
+    def __str__(self):
+        return f"{self.user} {self.get_direction_display()} {self.device} at {self.timestamp}"

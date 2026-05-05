@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from apps.devices.models import Device
 from apps.groups.models import Group, GroupStudent
@@ -12,6 +12,14 @@ from apps.user_management.models import UserProfile
 
 @login_required
 def dashboard(request):
+    teacher_profile = UserProfile.objects.filter(
+        auth_user=request.user,
+        role=UserProfile.Role.TEACHER,
+        is_active=True,
+    ).first()
+    if teacher_profile and not request.user.is_superuser and not request.user.is_staff:
+        return redirect('schedule:teacher_attendance')
+
     devices = Device.objects.select_related('room').all()
     users = UserProfile.objects.all()
     groups = Group.objects.all()

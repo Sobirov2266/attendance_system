@@ -1,0 +1,71 @@
+{% extends 'teacher_base.html' %}
+
+{% block title %}Teacher panel - Davomat{% endblock %}
+{% block page_title %}Davomat{% endblock %}
+{% block nav_teacher_attendance %}active{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="table-header">
+        <div>
+            <h2>Kunlik darslar</h2>
+            <div class="table-meta">Tanlangan sana: <strong>{{ selected_date }}</strong></div>
+        </div>
+    </div>
+
+    <div class="date-buttons" style="margin-bottom: 1rem; display: flex; gap: .5rem; flex-wrap: wrap;">
+        {% for d in day_buttons %}
+            {% with day=d|date:"Y-m-d" %}
+            <a
+                href="?date={{ day }}"
+                class="btn-secondary"
+                style="{% if day == selected_date %}background:#007bff;color:#fff;border-color:#007bff;{% endif %}"
+            >
+                {{ d|date:"d.m (D)" }}
+            </a>
+            {% endwith %}
+        {% endfor %}
+    </div>
+
+    {% if slot_rows %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Para</th>
+                <th>Guruh</th>
+                <th>Fan</th>
+                <th>Xona</th>
+                <th>Holat</th>
+                <th>Amal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in slot_rows %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ row.slot.get_lesson_number_display }} ({{ row.slot.start_time|time:"H:i" }}-{{ row.slot.end_time|time:"H:i" }})</td>
+                <td>{{ row.slot.group_subject.group.group_name }}</td>
+                <td>{{ row.slot.group_subject.subject.subject_name }}</td>
+                <td>{{ row.slot.room.room_name }}</td>
+                <td>
+                    {% if row.has_room_device %}
+                        Active ({{ row.room_device_name }})
+                    {% else %}
+                        Xonaga device biriktirilmagan
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="btn-primary" href="{% url 'schedule:teacher_attendance_detail' row.slot.id %}?date={{ selected_date }}">
+                        Ochish
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-row">Bu kunda sizda dars yo'q.</div>
+    {% endif %}
+</div>
+{% endblock %}

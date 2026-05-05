@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -13,6 +14,14 @@ class UserProfile(models.Model):
     last_name  = models.CharField(max_length=100, verbose_name="Familya")
     first_name = models.CharField(max_length=100, verbose_name="Ism")
     role       = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT, verbose_name="Lavozim")
+    auth_user  = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='linked_profile',
+        verbose_name='Tizim foydalanuvchisi',
+    )
     is_active  = models.BooleanField(default=True, verbose_name="Faol")
     created_at = models.DateTimeField(auto_now_add=True)
 

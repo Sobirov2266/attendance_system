@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
@@ -13,6 +14,7 @@ from .models import UserProfile
 
 STUDENT_IMPORT_HEADERS = ['Face ID', 'AIS ID', 'Familya', 'Ism', 'Holati']
 STUDENT_IMPORT_SAMPLE = [['FACE-1001', 'AIS-1001', 'Karimov', 'Ali', 'Faol']]
+AuthUser = get_user_model()
 
 
 def _posted_is_active(request):
@@ -79,7 +81,7 @@ def user_list(request, role_scope=None):
             except IntegrityError:
                 error = "Bu Face ID yoki AIS ID allaqachon mavjud!"
 
-    users_queryset = UserProfile.objects.all()
+    users_queryset = UserProfile.objects.select_related('auth_user').all()
     if role_scope:
         users_queryset = users_queryset.filter(role=role_scope)
     paginator = Paginator(users_queryset.order_by('last_name', 'first_name'), 20)
@@ -177,6 +179,8 @@ def import_students(request):
 def delete_user(request, user_id):
     try:
         user = UserProfile.objects.get(id=user_id)
+        if user.auth_user_id:
+            user.auth_user.delete()
         user.delete()
         return JsonResponse({'success': True})
     except UserProfile.DoesNotExist:
@@ -186,7 +190,7 @@ def delete_user(request, user_id):
 @login_required
 @require_POST
 def update_user(request, user_id):
-    user = get_object_or_404(UserProfile, id=user_id)
+    user = get_object_or_404(UserProfile.objects.select_related('auth_user'), id=user_id)
 
     face_id = request.POST.get('face_id', '').strip()
     ais_id = request.POST.get('ais_id', '').strip()
@@ -194,6 +198,8 @@ def update_user(request, user_id):
     first_name = request.POST.get('first_name', '').strip()
     role = request.POST.get('role', 'student')
     is_active = _posted_is_active(request)
+    login_username = request.POST.get('login_username', '').strip()
+    login_password = request.POST.get('login_password', '')
 
     if not all([face_id, ais_id, last_name, first_name]):
         return JsonResponse({'success': False, 'error': "Barcha maydonlarni to'ldiring."}, status=400)
@@ -206,13 +212,35 @@ def update_user(request, user_id):
     if duplicate:
         return JsonResponse({'success': False, 'error': "Bu Face ID yoki AIS ID allaqachon mavjud!"}, status=400)
 
+    if role == UserProfile.Role.TEACHER and (login_username or login_password):
+        target_username = login_username or (user.auth_user.username if user.auth_user_id else '')
+        if not target_username:
+            return JsonResponse({'success': False, 'error': "Teacher uchun login kiriting."}, status=400)
+        if not login_password:
+            return JsonResponse({'success': False, 'error': "Teacher uchun parol kiriting."}, status=400)
+
+        duplicate_username_qs = AuthUser.objects.filter(username=target_username)
+        if user.auth_user_id:
+            duplicate_username_qs = duplicate_username_qs.exclude(id=user.auth_user_id)
+        if duplicate_username_qs.exists():
+            return JsonResponse({'success': False, 'error': "Bu login allaqachon band."}, status=400)
+
+        auth_user = user.auth_user if user.auth_user_id else AuthUser()
+        auth_user.username = target_username
+        auth_user.set_password(login_password)
+        auth_user.save()
+        user.auth_user = auth_user
+
     user.face_id = face_id
     user.ais_id = ais_id
     user.last_name = last_name
     user.first_name = first_name
     user.role = role
     user.is_active = is_active
-    user.save(update_fields=['face_id', 'ais_id', 'last_name', 'first_name', 'role', 'is_active'])
+    update_fields = ['face_id', 'ais_id', 'last_name', 'first_name', 'role', 'is_active']
+    if role == UserProfile.Role.TEACHER and (login_username or login_password):
+        update_fields.append('auth_user')
+    user.save(update_fields=update_fields)
 
     return JsonResponse({
         'success': True,
@@ -227,6 +255,7 @@ def update_user(request, user_id):
             'role': user.role,
             'role_display': user.get_role_display(),
             'is_active': user.is_active,
+            'login_username': user.auth_user.username if user.auth_user_id else '',
         }
     })
 

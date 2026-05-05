@@ -1,12 +1,17 @@
+from datetime import datetime, timedelta
+
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.http import JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.devices.models import Device, DeviceLog
 from apps.groups.models import Group
+from apps.groups.models import GroupStudent
 from apps.rooms.models import Room
 from apps.subjects.models import Subject
 from apps.user_management.models import UserProfile
@@ -207,7 +212,7 @@ def lesson_slot_list(request):
 def update_lesson_slot(request, pk):
     ls = get_object_or_404(
         LessonSlot.objects.select_related(
-            'group_subject__group', 'group_subject__subject', 'room'
+            'group_subject__group', 'group_subject__subject', 'group_subject__teacher', 'room'
         ),
         pk=pk,
     )
@@ -245,6 +250,7 @@ def update_lesson_slot(request, pk):
             'id': ls.id,
             'group_subject_id': ls.group_subject_id,
             'group_subject_label': str(ls.group_subject),
+            'teacher_name': ls.group_subject.teacher.get_full_name(),
             'room_id': ls.room_id,
             'room_name': ls.room.room_name,
             'weekday': ls.weekday,
@@ -273,3 +279,241 @@ def delete_lesson_slot(request, pk):
     ls = get_object_or_404(LessonSlot, pk=pk)
     ls.delete()
     return JsonResponse({'success': True})
+
+
+def _get_linked_teacher_profile(user):
+    if not user.is_authenticated:
+        return None
+    return UserProfile.objects.filter(
+        auth_user=user,
+        role=UserProfile.Role.TEACHER,
+        is_active=True,
+    ).first()
+
+
+def _parse_selected_date(request, tashkent_tz):
+    selected_date_str = (request.GET.get('date') or '').strip()
+    if selected_date_str:
+        try:
+            return datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    return timezone.localtime(timezone.now(), tashkent_tz).date()
+
+
+def _room_device_or_none(room):
+    try:
+        return room.attendance_device
+    except Device.DoesNotExist:
+        return None
+
+
+@login_required
+def teacher_dashboard(request):
+    teacher_profile = _get_linked_teacher_profile(request.user)
+    if teacher_profile is None:
+        return HttpResponseForbidden("Bu sahifa faqat teacher uchun.")
+
+    weekly_slots = list(
+        LessonSlot.objects.filter(
+            group_subject__teacher=teacher_profile,
+            group_subject__is_active=True,
+            is_active=True,
+        ).select_related('group_subject__group')
+    )
+    weekly_minutes = sum(
+        ((slot.end_time.hour * 60 + slot.end_time.minute) - (slot.start_time.hour * 60 + slot.start_time.minute))
+        for slot in weekly_slots
+    )
+    weekly_hours = round(weekly_minutes / 60, 1)
+
+    assignments = GroupSubject.objects.filter(
+        teacher=teacher_profile,
+        is_active=True,
+    ).select_related('group', 'subject')
+    groups = sorted({assignment.group.group_name for assignment in assignments})
+
+    return render(request, 'schedule/teacher_dashboard.html', {
+        'teacher_profile': teacher_profile,
+        'weekly_hours': weekly_hours,
+        'groups': groups,
+        'assignments': assignments,
+    })
+
+
+@login_required
+def teacher_attendance(request):
+    teacher_profile = _get_linked_teacher_profile(request.user)
+    if teacher_profile is None:
+        return HttpResponseForbidden("Bu sahifa faqat teacher uchun.")
+
+    tashkent_tz = timezone.get_fixed_timezone(300)
+    selected_date = _parse_selected_date(request, tashkent_tz)
+    selected_weekday = selected_date.isoweekday()
+    day_buttons = [
+        selected_date + timedelta(days=offset)
+        for offset in range(-3, 4)
+    ]
+
+    assignments = GroupSubject.objects.filter(
+        teacher=teacher_profile,
+        is_active=True,
+    )
+    slots = LessonSlot.objects.filter(
+        group_subject__in=assignments,
+        is_active=True,
+        weekday=selected_weekday,
+    ).select_related('group_subject__group', 'group_subject__subject', 'room').order_by('lesson_number')
+
+    slot_rows = []
+    for slot in slots:
+        room_device = _room_device_or_none(slot.room)
+        has_room_device = bool(
+            room_device and room_device.is_active and room_device.device_type == 'room'
+        )
+        slot_rows.append({
+            'slot': slot,
+            'has_room_device': has_room_device,
+            'room_device_name': room_device.name if room_device else '',
+        })
+
+    return render(request, 'schedule/teacher_attendance_list.html', {
+        'teacher_profile': teacher_profile,
+        'day_buttons': day_buttons,
+        'slot_rows': slot_rows,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+    })
+
+
+@login_required
+def teacher_attendance_detail(request, lesson_slot_pk):
+    teacher_profile = _get_linked_teacher_profile(request.user)
+    if teacher_profile is None:
+        return HttpResponseForbidden("Bu sahifa faqat teacher uchun.")
+
+    lesson_slot = get_object_or_404(
+        LessonSlot.objects.select_related(
+            'group_subject__group',
+            'group_subject__subject',
+            'group_subject__teacher',
+            'room',
+        ),
+        pk=lesson_slot_pk,
+        is_active=True,
+        group_subject__teacher=teacher_profile,
+        group_subject__is_active=True,
+    )
+    group_subject = lesson_slot.group_subject
+
+    tashkent_tz = timezone.get_fixed_timezone(300)
+    selected_date = _parse_selected_date(request, tashkent_tz)
+    day_start = timezone.make_aware(
+        datetime.combine(selected_date, datetime.min.time()),
+        tashkent_tz,
+    )
+    day_end = timezone.make_aware(
+        datetime.combine(selected_date, datetime.max.time()),
+        tashkent_tz,
+    )
+
+    memberships = list(
+        GroupStudent.objects.filter(
+            group=group_subject.group,
+            is_active=True,
+            student__is_active=True,
+        )
+        .select_related('student')
+        .order_by('student__last_name', 'student__first_name')
+    )
+    students = [membership.student for membership in memberships]
+    student_ids = [student.id for student in students]
+
+    university_present_ids = set(
+        DeviceLog.objects.filter(
+            user_id__in=student_ids,
+            device__device_type='entry',
+            timestamp__range=(day_start, day_end),
+        ).values_list('user_id', flat=True).distinct()
+    )
+
+    room_device = _room_device_or_none(lesson_slot.room)
+    has_room_device = bool(
+        room_device and room_device.is_active and room_device.device_type == 'room'
+    )
+    lesson_present_ids = set()
+    if has_room_device:
+        slot_start = timezone.make_aware(
+            datetime.combine(selected_date, lesson_slot.start_time),
+            tashkent_tz,
+        )
+        slot_end = timezone.make_aware(
+            datetime.combine(selected_date, lesson_slot.end_time),
+            tashkent_tz,
+        )
+        lesson_present_ids = set(
+            DeviceLog.objects.filter(
+                user_id__in=student_ids,
+                device_id=room_device.id,
+                timestamp__range=(slot_start, slot_end),
+            ).values_list('user_id', flat=True).distinct()
+        )
+
+    student_rows = []
+    for student in students:
+        if not has_room_device:
+            lesson_status = "Xonaga device biriktirilmagan"
+            lesson_present = None
+        else:
+            lesson_present = student.id in lesson_present_ids
+            lesson_status = 'Keldi' if lesson_present else 'Kelmagan'
+
+        student_rows.append({
+            'student': student,
+            'university_present': student.id in university_present_ids,
+            'lesson_present': lesson_present,
+            'lesson_status': lesson_status,
+        })
+
+    return render(request, 'schedule/teacher_attendance_detail.html', {
+        'teacher_profile': teacher_profile,
+        'group_subject': group_subject,
+        'lesson_slot': lesson_slot,
+        'student_rows': student_rows,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+        'has_room_device': has_room_device,
+        'room_device_name': room_device.name if room_device else '',
+    })
+
+
+@login_required
+def teacher_schedule(request):
+    teacher_profile = _get_linked_teacher_profile(request.user)
+    if teacher_profile is None:
+        return HttpResponseForbidden("Bu sahifa faqat teacher uchun.")
+
+    weekly_slots = LessonSlot.objects.filter(
+        group_subject__teacher=teacher_profile,
+        group_subject__is_active=True,
+        is_active=True,
+    ).select_related('group_subject__group', 'group_subject__subject', 'room').order_by(
+        'weekday', 'lesson_number'
+    )
+
+    slots_by_weekday = {weekday: [] for weekday, _label in LessonSlot.Weekday.choices}
+    for slot in weekly_slots:
+        slots_by_weekday[slot.weekday].append(slot)
+
+    weekday_labels = dict(LessonSlot.Weekday.choices)
+    weekdays = [
+        {
+            'value': weekday,
+            'label': weekday_labels[weekday],
+            'slots': slots_by_weekday[weekday],
+        }
+        for weekday, _label in LessonSlot.Weekday.choices
+    ]
+
+    return render(request, 'schedule/teacher_schedule.html', {
+        'teacher_profile': teacher_profile,
+        'weekdays': weekdays,
+    })
