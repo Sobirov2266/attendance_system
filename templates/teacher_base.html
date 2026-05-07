@@ -7,6 +7,7 @@
     <title>{% block title %}Teacher panel{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
 <aside class="sidebar" id="sidebar">
@@ -19,17 +20,23 @@
     </div>
 
     <nav class="sidebar-nav">
+        <div class="nav-section-label">Asosiy</div>
+
         <a href="{% url 'schedule:teacher_dashboard' %}" class="nav-item {% block nav_teacher_dashboard %}{% endblock %}">
             <span class="nav-icon"><i class="bi bi-grid-1x2"></i></span>
             <span class="nav-label">Dashboard</span>
         </a>
+
+        <div class="nav-section-label">Davomat</div>
+
         <a href="{% url 'schedule:teacher_attendance' %}" class="nav-item {% block nav_teacher_attendance %}{% endblock %}">
             <span class="nav-icon"><i class="bi bi-calendar2-check"></i></span>
             <span class="nav-label">Davomat</span>
         </a>
-        <a href="{% url 'schedule:teacher_schedule' %}" class="nav-item {% block nav_teacher_schedule %}{% endblock %}">
-            <span class="nav-icon"><i class="bi bi-calendar-week"></i></span>
-            <span class="nav-label">Dars jadvali</span>
+
+        <a href="{% url 'schedule:teacher_monitoring' %}" class="nav-item {% block nav_teacher_monitoring %}{% endblock %}">
+            <span class="nav-icon"><i class="bi bi-activity"></i></span>
+            <span class="nav-label">Monitoring</span>
         </a>
     </nav>
 
@@ -38,7 +45,7 @@
             <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
             <div class="user-info">
                 <span class="user-name">{{ teacher_profile.get_full_name|default:request.user.username }}</span>
-                <span class="user-role">Teacher</span>
+                <span class="user-role">O'qituvchi</span>
             </div>
         </div>
         <a href="{% url 'logout' %}" class="logout-btn" title="Chiqish">
@@ -57,6 +64,9 @@
                 <span class="breadcrumb-page">{% block page_title %}Teacher panel{% endblock %}</span>
             </div>
         </div>
+        <div class="topbar-right">
+            <div class="topbar-time" id="liveTime"></div>
+        </div>
     </header>
 
     <main class="main-content">
@@ -65,6 +75,9 @@
             <div class="alert alert-{{ message.tags }} alert-dismissible">
                 <i class="bi bi-info-circle"></i>
                 {{ message }}
+                <button class="alert-close" onclick="this.parentElement.remove()">
+                    <i class="bi bi-x"></i>
+                </button>
             </div>
             {% endfor %}
         {% endif %}
@@ -73,14 +86,29 @@
 </div>
 
 <script>
-const sidebarToggle = document.getElementById('sidebarToggle');
-const sidebar = document.getElementById('sidebar');
-const mainWrapper = document.querySelector('.main-wrapper');
+    // Live soat
+    function updateTime() {
+        const now = new Date();
+        const timeEl = document.getElementById('liveTime');
+        if (timeEl) {
+            timeEl.textContent = now.toLocaleTimeString('uz-UZ', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
 
-sidebarToggle?.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    mainWrapper.classList.toggle('sidebar-collapsed');
-});
+    // Sidebar toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainWrapper = document.querySelector('.main-wrapper');
+    sidebarToggle?.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainWrapper.classList.toggle('sidebar-collapsed');
+    });
 </script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

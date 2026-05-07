@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.core.cache import cache
 from django.db import IntegrityError
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -15,8 +16,12 @@ from apps.groups.models import GroupStudent
 from apps.rooms.models import Room
 from apps.subjects.models import Subject
 from apps.user_management.models import UserProfile
+from apps.devices.services.hikvision_real import fetch_real_attendance_logs
 
 from .models import GroupSubject, LessonSlot
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _posted_is_active(request):
@@ -298,7 +303,9 @@ def _parse_selected_date(request, tashkent_tz):
             return datetime.strptime(selected_date_str, '%Y-%m-%d').date()
         except ValueError:
             pass
-    return timezone.localtime(timezone.now(), tashkent_tz).date()
+    # Hozirgi vaqtni Toshkent vaqt zonasida olamiz
+    current_date = timezone.localtime(timezone.now(), tashkent_tz).date()
+    return current_date
 
 
 def _room_device_or_none(room):
@@ -347,7 +354,7 @@ def teacher_attendance(request):
     if teacher_profile is None:
         return HttpResponseForbidden("Bu sahifa faqat teacher uchun.")
 
-    tashkent_tz = timezone.get_fixed_timezone(300)
+    tashkent_tz = timezone.get_fixed_timezone(300)  # UTC+5 for Tashkent
     selected_date = _parse_selected_date(request, tashkent_tz)
     selected_weekday = selected_date.isoweekday()
     day_buttons = [
@@ -405,7 +412,7 @@ def teacher_attendance_detail(request, lesson_slot_pk):
     )
     group_subject = lesson_slot.group_subject
 
-    tashkent_tz = timezone.get_fixed_timezone(300)
+    tashkent_tz = timezone.get_fixed_timezone(300)  # UTC+5 for Tashkent
     selected_date = _parse_selected_date(request, tashkent_tz)
     day_start = timezone.make_aware(
         datetime.combine(selected_date, datetime.min.time()),
@@ -440,7 +447,9 @@ def teacher_attendance_detail(request, lesson_slot_pk):
     has_room_device = bool(
         room_device and room_device.is_active and room_device.device_type == 'room'
     )
+    
     lesson_present_ids = set()
+    lesson_entry_times = {}
     if has_room_device:
         slot_start = timezone.make_aware(
             datetime.combine(selected_date, lesson_slot.start_time),
@@ -450,29 +459,99 @@ def teacher_attendance_detail(request, lesson_slot_pk):
             datetime.combine(selected_date, lesson_slot.end_time),
             tashkent_tz,
         )
-        lesson_present_ids = set(
-            DeviceLog.objects.filter(
-                user_id__in=student_ids,
-                device_id=room_device.id,
-                timestamp__range=(slot_start, slot_end),
-            ).values_list('user_id', flat=True).distinct()
+        
+        lesson_logs = DeviceLog.objects.filter(
+            user_id__in=student_ids,
+            device_id=room_device.id,
+            timestamp__range=(slot_start, slot_end),
+        ).order_by('timestamp')
+        
+        for log in lesson_logs:
+            if log.user_id not in lesson_entry_times:
+                lesson_entry_times[log.user_id] = log.timestamp
+        
+        lesson_present_ids = set(lesson_entry_times.keys())
+    else:
+        # Agar xona device bo'lmasa, barcha turniketlardan o'tganlarni tekshiramiz
+        slot_start = timezone.make_aware(
+            datetime.combine(selected_date, lesson_slot.start_time),
+            tashkent_tz,
         )
+        slot_end = timezone.make_aware(
+            datetime.combine(selected_date, lesson_slot.end_time),
+            tashkent_tz,
+        )
+        
+        # Barcha entry device lardan o'tganlarni qidiramiz
+        all_logs = DeviceLog.objects.filter(
+            user_id__in=student_ids,
+            device__device_type='entry',
+            timestamp__range=(slot_start, slot_end),
+        ).order_by('timestamp')
+        
+        for log in all_logs:
+            if log.user_id not in lesson_entry_times:
+                lesson_entry_times[log.user_id] = log.timestamp
+        
+        lesson_present_ids = set(lesson_entry_times.keys())
+        has_room_device = True  # Override to show results
 
     student_rows = []
     for student in students:
         if not has_room_device:
             lesson_status = "Xonaga device biriktirilmagan"
             lesson_present = None
+            entry_time = None
+            is_late = False
         else:
             lesson_present = student.id in lesson_present_ids
-            lesson_status = 'Keldi' if lesson_present else 'Kelmagan'
+            entry_time = lesson_entry_times.get(student.id)
+            
+            # Kechikib kelganligini tekshirish
+            is_late = False
+            if lesson_present and entry_time:
+                # Ensure entry_time is timezone-aware and comparable to slot_start
+                if timezone.is_naive(entry_time):
+                    entry_time = timezone.make_aware(entry_time, tashkent_tz)
+
+                slot_start = timezone.make_aware(
+                    datetime.combine(selected_date, lesson_slot.start_time),
+                    tashkent_tz,
+                )
+
+                logger.debug(
+                    "%s - entry: %s, start: %s, late_threshold: %s",
+                    student,
+                    entry_time,
+                    slot_start,
+                    slot_start + timedelta(minutes=20),
+                )
+                # Dars boshlangandan 20 minutdan ko'p kechiksa
+                if entry_time > slot_start + timedelta(minutes=20):
+                    is_late = True
+                    lesson_status = 'Kechikib keldi'
+                    logger.debug("%s kechikib keldi!", student)
+                else:
+                    lesson_status = 'Keldi'
+            elif lesson_present:
+                lesson_status = 'Keldi'
+            else:
+                lesson_status = 'Kelmagan'
 
         student_rows.append({
             'student': student,
             'university_present': student.id in university_present_ids,
             'lesson_present': lesson_present,
             'lesson_status': lesson_status,
+            'entry_time': entry_time,
+            'is_late': is_late,
         })
+
+    # Statistikani hisoblash
+    total_students = len(student_rows)
+    present_count = sum(1 for row in student_rows if row['lesson_present'])
+    absent_count = total_students - present_count
+    late_count = sum(1 for row in student_rows if row.get('is_late'))
 
     return render(request, 'schedule/teacher_attendance_detail.html', {
         'teacher_profile': teacher_profile,
@@ -482,6 +561,10 @@ def teacher_attendance_detail(request, lesson_slot_pk):
         'selected_date': selected_date.strftime('%Y-%m-%d'),
         'has_room_device': has_room_device,
         'room_device_name': room_device.name if room_device else '',
+        'total_students': total_students,
+        'present_count': present_count,
+        'absent_count': absent_count,
+        'late_count': late_count,
     })
 
 
@@ -517,3 +600,182 @@ def teacher_schedule(request):
         'teacher_profile': teacher_profile,
         'weekdays': weekdays,
     })
+
+
+@login_required
+def teacher_monitoring(request):
+    """
+    Teacher uchun monitoring sahifasi.
+    Faqat o'zining guruhlari va o'qitadigan kunlaridagi
+    turniket loglarini ko'rsatadi.
+    """
+    teacher_profile = _get_linked_teacher_profile(request.user)
+    if teacher_profile is None:
+        return HttpResponseForbidden("Bu sahifa faqat teacher uchun.")
+
+    tashkent_tz = timezone.get_fixed_timezone(300)  # UTC+5 for Tashkent
+    today = timezone.localtime(timezone.now(), tashkent_tz).date()
+    last_10_dates = [today - timedelta(days=i) for i in range(10)]
+    last_10_days = [d.strftime('%Y-%m-%d') for d in last_10_dates]
+
+    # Tanlangan sana
+    selected_date_str = request.GET.get('date', '').strip()
+    if selected_date_str:
+        try:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = today
+    else:
+        selected_date = today
+
+    if selected_date not in last_10_dates:
+        selected_date = today
+
+    day_start = timezone.make_aware(
+        datetime.combine(selected_date, datetime.min.time()), tashkent_tz
+    )
+    day_end = timezone.make_aware(
+        datetime.combine(selected_date, datetime.max.time()), tashkent_tz
+    )
+
+    # O'sha kunda o'qituvchining darslari bor guruhlarini topish
+    selected_weekday = selected_date.isoweekday()
+    teacher_groups = Group.objects.filter(
+        group_subjects__teacher=teacher_profile,
+        group_subjects__is_active=True,
+        group_subjects__lesson_slots__weekday=selected_weekday,
+        group_subjects__lesson_slots__is_active=True,
+    ).distinct()
+
+    # Guruh talabalari
+    from apps.groups.models import GroupStudent
+    student_profiles = list(
+        GroupStudent.objects.filter(
+            group__in=teacher_groups,
+            is_active=True,
+            student__is_active=True,
+        ).select_related('student').values_list('student', flat=True)
+    )
+
+    # Turniket loglarini olish (faqat kirish qurilmalaridan)
+    entry_devices = list(Device.objects.filter(is_active=True, device_type='entry').order_by('name'))
+
+    logs = _get_teacher_monitoring_logs(
+        devices=entry_devices,
+        day_start=day_start,
+        day_end=day_end,
+        tashkent_tz=tashkent_tz,
+    )
+
+    # Qidirish
+    search_query = request.GET.get('q', '').strip()
+
+    # Foydalanuvchilarni logs dan yig'ish
+    from django.db.models import Q as DQ
+    from apps.user_management.models import UserProfile as UP
+
+    resolved_ids = {log['user_id'] for log in logs if log['user_id']}
+    profiles_by_id = {}
+    if resolved_ids:
+        for p in UP.objects.filter(DQ(ais_id__in=resolved_ids) | DQ(face_id__in=resolved_ids)):
+            nid = _normalize_uid(p.ais_id)
+            profiles_by_id[nid] = p
+            profiles_by_id[_normalize_uid(p.face_id)] = p
+
+    users_by_id = {}
+    for log in logs:
+        uid = log['user_id']
+        if not uid:
+            continue
+        profile = profiles_by_id.get(uid)
+        is_my_student = (profile.id in student_profiles) if profile else False
+        if uid not in users_by_id:
+            users_by_id[uid] = {
+                'user_id': uid,
+                'full_name': profile.get_full_name() if profile else log['full_name'],
+                'role': profile.role if profile else 'student',
+                'role_display': profile.get_role_display() if profile else 'Talaba',
+                'is_my_student': is_my_student,
+                'last_seen': log['timestamp'],
+                'pass_count': 1,
+            }
+        else:
+            users_by_id[uid]['pass_count'] += 1
+            if log['timestamp'] > users_by_id[uid]['last_seen']:
+                users_by_id[uid]['last_seen'] = log['timestamp']
+
+    users = list(users_by_id.values())
+
+    # Filter: faqat o'z talabalari yoki hammasi
+    show_filter = request.GET.get('show', 'my').strip()  # 'my' | 'all'
+    if show_filter == 'my':
+        users = [u for u in users if u['is_my_student']]
+
+    if search_query:
+        q = search_query.lower()
+        users = [u for u in users if q in u['full_name'].lower() or q in u['user_id'].lower()]
+
+    users.sort(key=lambda x: x['last_seen'], reverse=True)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(users, 30)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'schedule/teacher_monitoring.html', {
+        'teacher_profile': teacher_profile,
+        'users': page_obj.object_list,
+        'page_obj': page_obj,
+        'total_count': paginator.count,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+        'last_10_days': last_10_days,
+        'q': search_query,
+        'show_filter': show_filter,
+        'teacher_groups': teacher_groups,
+    })
+
+def _normalize_uid(value):
+    identifier = str(value or '').strip()
+    if identifier.isdigit():
+        return identifier.lstrip('0') or '0'
+    return identifier
+
+def _get_teacher_monitoring_logs(devices, day_start, day_end, tashkent_tz):
+    from django.core.cache import cache
+    from apps.devices.services.hikvision_real import fetch_real_attendance_logs
+
+    device_part = '-'.join(str(d.id) for d in devices) if devices else 'none'
+    cache_key = (
+        f"teacher_monitoring_logs:"
+        f"{day_start.strftime('%Y%m%d')}:"
+        f"{device_part}"
+    )
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    logs = []
+    for device in devices:
+        success, _err, device_logs = fetch_real_attendance_logs(
+            device, start_time=day_start, end_time=day_end
+        )
+        if not success:
+            continue
+        for log in device_logs:
+            ts = log.get('timestamp')
+            if ts is None:
+                continue
+            if timezone.is_naive(ts):
+                ts = timezone.make_aware(ts, tashkent_tz)
+            if not (day_start <= ts <= day_end):
+                continue
+            full_name = (log.get('name') or '').strip() or "Noma'lum"
+            uid = _normalize_uid(log.get('employee_id'))
+            logs.append({
+                'timestamp': ts,
+                'full_name': full_name,
+                'user_id': uid,
+                'device_name': log.get('device_name') or device.name,
+            })
+
+    cache.set(cache_key, logs, timeout=60)
+    return logs

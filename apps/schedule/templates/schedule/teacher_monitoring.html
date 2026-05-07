@@ -1,0 +1,141 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Monitoring{% endblock %}
+{% block page_title %}Monitoring{% endblock %}
+{% block nav_teacher_monitoring %}active{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-activity"></i></div>
+        Turniket monitoringi
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="filter-bar" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+
+        <!-- Sana tanlash -->
+        <div class="select-wrap" style="min-width:160px;">
+            <select name="date" onchange="this.form.submit()">
+                {% for day in last_10_days %}
+                <option value="{{ day }}" {% if day == selected_date %}selected{% endif %}>{{ day }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Ko'rsatish filter -->
+        <div class="select-wrap" style="min-width:160px;">
+            <select name="show" onchange="this.form.submit()">
+                <option value="my" {% if show_filter == 'my' %}selected{% endif %}>Faqat mening talabalarim</option>
+                <option value="all" {% if show_filter == 'all' %}selected{% endif %}>Barcha o'tganlar</option>
+            </select>
+        </div>
+
+        <!-- Qidiruv -->
+        <div class="input-wrap" style="flex:1;min-width:200px;">
+            <span class="input-icon"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" value="{{ q }}" placeholder="Ism yoki ID bo'yicha qidirish...">
+        </div>
+
+        <button type="submit" class="btn-primary">
+            <i class="bi bi-funnel"></i> Filtrlash
+        </button>
+
+        {% if q or show_filter != 'my' %}
+        <a href="?date={{ selected_date }}" class="btn-secondary">
+            <i class="bi bi-x-circle"></i> Tozalash
+        </a>
+        {% endif %}
+    </form>
+
+    <!-- Guruhlar info -->
+    {% if teacher_groups %}
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted);">
+        <i class="bi bi-collection"></i>
+        Bu kunda darsli guruhlar:
+        {% for g in teacher_groups %}
+            <strong>{{ g.group_name }}</strong>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Jami -->
+    <div class="table-meta" style="margin-bottom:12px;">
+        Jami: <strong>{{ total_count }}</strong> ta
+        {% if show_filter == 'my' %}mening talabalarim{% else %}o'tgan{% endif %}
+        — <em>{{ selected_date }}</em>
+    </div>
+
+    <!-- Jadval -->
+    {% if users %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ism Familya</th>
+                    <th>ID</th>
+                    <th>Oxirgi o'tish</th>
+                    <th>O'tishlar</th>
+                    <th>Holati</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                    <td><strong>{{ user.full_name }}</strong></td>
+                    <td class="mono" style="font-size:12px;">{{ user.user_id }}</td>
+                    <td>
+                        {% if user.last_seen %}
+                            {{ user.last_seen|date:"d-m-Y H:i:s" }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-blue">{{ user.pass_count }}</span>
+                    </td>
+                    <td>
+                        {% if user.is_my_student %}
+                            <span class="badge badge-green">Mening talabam</span>
+                        {% else %}
+                            <span class="badge badge-gray">Boshqa</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination" style="margin-top:16px;display:flex;gap:8px;justify-content:center;">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&date={{ selected_date }}&show={{ show_filter }}&q={{ q }}" class="btn-secondary">‹</a>
+        {% endif %}
+        <span style="padding:6px 12px;font-weight:600;">
+            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&date={{ selected_date }}&show={{ show_filter }}&q={{ q }}" class="btn-secondary">›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-person-x" style="font-size:48px;color:var(--text-muted);"></i>
+        <p style="margin-top:12px;color:var(--text-muted);">
+            {% if show_filter == 'my' %}
+                Bu kunda mening talabalarimdan hech kim turniketdan o'tmagan.
+            {% else %}
+                Bu kunda hech kim turniketdan o'tmagan.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

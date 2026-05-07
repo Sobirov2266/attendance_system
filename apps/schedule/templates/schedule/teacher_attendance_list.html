@@ -1,71 +1,85 @@
 {% extends 'teacher_base.html' %}
+{% load static %}
 
-{% block title %}Teacher panel - Davomat{% endblock %}
+{% block title %}Davomat{% endblock %}
 {% block page_title %}Davomat{% endblock %}
 {% block nav_teacher_attendance %}active{% endblock %}
 
 {% block content %}
+
 <div class="card">
-    <div class="table-header">
-        <div>
-            <h2>Kunlik darslar</h2>
-            <div class="table-meta">Tanlangan sana: <strong>{{ selected_date }}</strong></div>
-        </div>
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-calendar2-check"></i></div>
+        Davomat — {{ selected_date }}
     </div>
 
-    <div class="date-buttons" style="margin-bottom: 1rem; display: flex; gap: .5rem; flex-wrap: wrap;">
-        {% for d in day_buttons %}
-            {% with day=d|date:"Y-m-d" %}
-            <a
-                href="?date={{ day }}"
-                class="btn-secondary"
-                style="{% if day == selected_date %}background:#007bff;color:#fff;border-color:#007bff;{% endif %}"
-            >
-                {{ d|date:"d.m (D)" }}
-            </a>
-            {% endwith %}
+    <!-- Kun tugmalari -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+        {% for day in day_buttons %}
+        <a href="?date={{ day|date:'Y-m-d' }}"
+           class="btn-{% if day|date:'Y-m-d' == selected_date %}primary{% else %}secondary{% endif %}"
+           style="font-size:13px;padding:6px 14px;">
+            {{ day|date:"d.m" }}
+            <span style="font-size:11px;opacity:0.75;display:block;text-align:center;">
+                {% if day.isoweekday == 1 %}Du{% elif day.isoweekday == 2 %}Se{% elif day.isoweekday == 3 %}Ch{% elif day.isoweekday == 4 %}Pa{% elif day.isoweekday == 5 %}Ju{% elif day.isoweekday == 6 %}Sh{% else %}Ya{% endif %}
+            </span>
+        </a>
         {% endfor %}
     </div>
 
+    <!-- Dars slotlari -->
     {% if slot_rows %}
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Para</th>
-                <th>Guruh</th>
-                <th>Fan</th>
-                <th>Xona</th>
-                <th>Holat</th>
-                <th>Amal</th>
-            </tr>
-        </thead>
-        <tbody>
+        <div style="display:flex;flex-direction:column;gap:12px;">
             {% for row in slot_rows %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ row.slot.get_lesson_number_display }} ({{ row.slot.start_time|time:"H:i" }}-{{ row.slot.end_time|time:"H:i" }})</td>
-                <td>{{ row.slot.group_subject.group.group_name }}</td>
-                <td>{{ row.slot.group_subject.subject.subject_name }}</td>
-                <td>{{ row.slot.room.room_name }}</td>
-                <td>
-                    {% if row.has_room_device %}
-                        Active ({{ row.room_device_name }})
-                    {% else %}
-                        Xonaga device biriktirilmagan
-                    {% endif %}
-                </td>
-                <td>
-                    <a class="btn-primary" href="{% url 'schedule:teacher_attendance_detail' row.slot.id %}?date={{ selected_date }}">
-                        Ochish
+            <div class="dash-card" style="margin:0;">
+                <div class="dash-card-header" style="flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <h3 class="dash-card-title" style="margin:0;">
+                            <i class="bi bi-clock"></i>
+                            {{ row.slot.lesson_number }}-para &nbsp;
+                            <span style="font-weight:400;font-size:14px;">
+                                {{ row.slot.start_time|time:"H:i" }} – {{ row.slot.end_time|time:"H:i" }}
+                            </span>
+                        </h3>
+                        <div style="margin-top:4px;font-size:13px;color:var(--text-muted);">
+                            <strong>{{ row.slot.group_subject.group.group_name }}</strong>
+                            &nbsp;·&nbsp;
+                            {{ row.slot.group_subject.subject.subject_name }}
+                            &nbsp;·&nbsp;
+                            <i class="bi bi-door-open"></i> {{ row.slot.room.room_name }}
+                        </div>
+                    </div>
+
+                    <a href="{% url 'schedule:teacher_attendance_detail' row.slot.pk %}?date={{ selected_date }}"
+                       class="btn-primary" style="font-size:13px;">
+                        <i class="bi bi-eye"></i> Davomatni ko'rish
                     </a>
-                </td>
-            </tr>
+                </div>
+
+                <div class="dash-card-body" style="padding-top:8px;">
+                    {% if row.has_room_device %}
+                        <span style="font-size:12px;color:var(--text-muted);">
+                            <i class="bi bi-camera-video" style="color:var(--color-green);"></i>
+                            Xona qurilmasi: <strong>{{ row.room_device_name }}</strong>
+                        </span>
+                    {% else %}
+                        <span style="font-size:12px;color:var(--text-muted);">
+                            <i class="bi bi-camera-video-off" style="color:var(--color-red);"></i>
+                            Xona qurilmasi biriktirilmagan
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
     {% else %}
-    <div class="empty-row">Bu kunda sizda dars yo'q.</div>
+        <div class="empty-state">
+            <i class="bi bi-calendar-x" style="font-size:48px;color:var(--text-muted);"></i>
+            <p style="margin-top:12px;color:var(--text-muted);">
+                Bu kunda dars jadvalingizda dars yo'q.
+            </p>
+        </div>
     {% endif %}
 </div>
+
 {% endblock %}

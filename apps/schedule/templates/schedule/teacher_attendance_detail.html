@@ -1,90 +1,237 @@
-{% extends 'base.html' %}
+{% extends 'teacher_base.html' %}
+{% load static %}
 
-{% block title %}Teacher panel - Guruh davomati{% endblock %}
-{% block page_title %}Teacher panel: Guruh davomati{% endblock %}
-{% block nav_attendance %}active{% endblock %}
+{% block title %}Davomat tafsilotlari{% endblock %}
+{% block page_title %}Davomat tafsilotlari{% endblock %}
+{% block nav_teacher_attendance %}active{% endblock %}
 
 {% block content %}
+
 <div class="card">
-    <div class="table-header">
-        <div>
-            <h2>{{ group_subject.group.group_name }} — {{ group_subject.subject.subject_name }}</h2>
-            <div class="table-meta">Sana: <strong>{{ selected_date }}</strong></div>
+    <div class="card-title">
+        <div class="icon"><i class="bi bi-calendar2-check"></i></div>
+        Davomat tafsilotlari — {{ selected_date }}
+    </div>
+
+    <!-- Dars ma'lumotlari -->
+    <div class="dash-card" style="margin-bottom: 20px;">
+        <div class="dash-card-header">
+            <div>
+                <h3 class="dash-card-title" style="margin:0;">
+                    <i class="bi bi-clock"></i>
+                    {{ lesson_slot.lesson_number }}-para &nbsp;
+                    <span style="font-weight:400;font-size:14px;">
+                        {{ lesson_slot.start_time|time:"H:i" }} – {{ lesson_slot.end_time|time:"H:i" }}
+                    </span>
+                </h3>
+                <div style="margin-top:4px;font-size:13px;color:var(--text-muted);">
+                    <strong>{{ group_subject.group.group_name }}</strong>
+                    &nbsp;·&nbsp;
+                    {{ group_subject.subject.subject_name }}
+                    &nbsp;·&nbsp;
+                    <i class="bi bi-door-open"></i> {{ lesson_slot.room.room_name }}
+                </div>
+            </div>
         </div>
-        <div>
-            <a href="{% url 'schedule:teacher_attendance' %}?date={{ selected_date }}" class="btn-secondary">Ortga</a>
+
+        <div class="dash-card-body" style="padding-top:8px;">
+            {% if has_room_device %}
+                <span style="font-size:12px;color:var(--text-muted);">
+                    <i class="bi bi-camera-video" style="color:var(--color-green);"></i>
+                    Xona qurilmasi: <strong>{{ room_device_name }}</strong>
+                </span>
+            {% else %}
+                <span style="font-size:12px;color:var(--text-muted);">
+                    <i class="bi bi-camera-video-off" style="color:var(--color-red);"></i>
+                    Xona qurilmasi biriktirilmagan
+                </span>
+            {% endif %}
         </div>
     </div>
 
-    <form method="get" style="margin-bottom: 1rem;">
-        <input type="date" name="date" value="{{ selected_date }}">
-        <button type="submit" class="btn-primary">Filtrlash</button>
-    </form>
+    <!-- Talabalar ro'yxati -->
+    {% if student_rows %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>Talaba</th>
+                        <th style="text-align: center; width: 120px;">Universitetga keldi</th>
+                        <th style="text-align: center; width: 120px;">Darsga keldi</th>
+                        <th style="text-align: center; width: 150px;">Kelgan vaqti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in student_rows %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ row.student.last_name }} {{ row.student.first_name }}</strong>
+                            {% if row.student.middle_name %}
+                                {{ row.student.middle_name }}
+                            {% endif %}
+                            <br>
+                            <small style="color: var(--text-muted);">{{ row.student.username }}</small>
+                        </td>
+                        <td style="text-align: center;">
+                            {% if row.university_present %}
+                                <span class="badge badge-success">
+                                    <i class="bi bi-check-circle"></i> Keldi
+                                </span>
+                            {% else %}
+                                <span class="badge badge-secondary">
+                                    <i class="bi bi-x-circle"></i> Kelmagan
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            {% if row.is_late %}
+                                <span class="badge badge-late">
+                                    <i class="bi bi-clock-history"></i> Kechikdi
+                                </span>
+                            {% elif row.lesson_present %}
+                                <span class="badge badge-success">
+                                    <i class="bi bi-check-circle"></i> Keldi
+                                </span>
+                            {% elif row.lesson_present is None %}
+                                <span class="badge badge-secondary">
+                                    <i class="bi bi-dash-circle"></i> Noma'lum
+                                </span>
+                            {% else %}
+                                <span class="badge badge-danger">
+                                    <i class="bi bi-x-circle"></i> Kelmagan
+                                </span>
+                            {% endif %}
+                            <!-- DEBUG: {{ row.is_late|default:"None" }} -->
+                        </td>
+                        <td style="text-align: center;">
+                            {% if row.entry_time %}
+                                <span style="font-weight:500;">
+                                    {{ row.entry_time|time:"H:i:s" }}
+                                </span>
+                            {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    {% if not has_lesson_slots %}
-    <div class="alert alert-error">Bu guruh uchun tanlangan kunda dars sloti yo'q.</div>
-    {% elif not has_any_room_device %}
-    <div class="alert alert-error">Xonaga device biriktirilmagan. Device biriktirilgach dars davomati aktiv bo'ladi.</div>
+        <!-- Statistika -->
+        <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-label">Jami talabalar</div>
+            </div>
+            
+            {% if has_room_device %}
+                <div class="stat-card" style="background: var(--color-green-light);">
+                    <div class="stat-value">{{ present_count }}</div>
+                    <div class="stat-label">Darsga keldi</div>
+                </div>
+                
+                <div class="stat-card stat-card-late">
+                    <div class="stat-value stat-value-late">{{ late_count }}</div>
+                    <div class="stat-label">Kechikdi</div>
+                </div>
+
+                <div class="stat-card" style="background: var(--color-red-light);">
+                    <div class="stat-value">{{ absent_count }}</div>
+                    <div class="stat-label">Darsga kelmadi</div>
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-people" style="font-size:48px;color:var(--text-muted);"></i>
+            <p style="margin-top:12px;color:var(--text-muted);">
+                Bu guruhda talabalar topilmadi.
+            </p>
+        </div>
     {% endif %}
 
-    {% if lesson_slot_cards %}
-    <table style="margin-bottom: 1rem;">
-        <thead>
-            <tr>
-                <th>Para</th>
-                <th>Xona</th>
-                <th>Holat</th>
-                <th>Darsga kelganlar</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for slot in lesson_slot_cards %}
-            <tr>
-                <td>{{ slot.label }}</td>
-                <td>{{ slot.room_name }}</td>
-                <td>
-                    {% if slot.has_room_device %}
-                        Active ({{ slot.device_name }})
-                    {% else %}
-                        Xonaga device biriktirilmagan
-                    {% endif %}
-                </td>
-                <td>
-                    {% if slot.has_room_device %}
-                        {{ slot.present_count }} ta
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Talaba</th>
-                <th>Universitetga kelgan</th>
-                <th>Dars davomati</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in student_rows %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ row.student.get_full_name }}</td>
-                <td>{% if row.university_present %}Keldi{% else %}Kelmagan{% endif %}</td>
-                <td>{{ row.lesson_status }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="empty-row">Guruhda aktiv talaba topilmadi.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Orqaga qaytish tugmasi -->
+    <div style="margin-top: 20px;">
+        <a href="{% url 'schedule:teacher_attendance' %}?date={{ selected_date }}" 
+           class="btn-secondary">
+            <i class="bi bi-arrow-left"></i> Orqaga qaytish
+        </a>
+    </div>
 </div>
+
+<style>
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success {
+    background: var(--color-green);
+    color: white;
+}
+
+.badge-danger {
+    background: var(--color-red);
+    color: white;
+}
+
+.badge-warning {
+    background: var(--color-yellow);
+    color: white;
+}
+
+.badge-late {
+    /* Muted professional rose */
+    background: #e76fa8; /* soft rose */
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 7px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stat-card-late {
+    background: #fff6fb; /* very light rose */
+    padding: 14px;
+    border-radius: 10px;
+    min-width: 140px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.stat-value-late {
+    color: #c81e73; /* deep rose for value */
+}
+
+.badge-secondary {
+    background: var(--color-gray);
+    color: white;
+}
+
+.stat-card {
+    background: var(--color-primary-light);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 120px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+</style>
+
 {% endblock %}
